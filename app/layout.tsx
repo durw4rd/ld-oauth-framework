@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navigation from "../components/Navigation";
 
 export const metadata: Metadata = {
     title: "LaunchDarkly OAuth Framework",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body suppressHydrationWarning={true}>{children}</body>
+            <body suppressHydrationWarning={true}>
+                <Navigation />
+                {children}
+            </body>
         </html>
     );
 }
