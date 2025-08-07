@@ -6,8 +6,12 @@ import { generateSessionId, getLocalhostPort, FRAMEWORK_URL } from '../lib/confi
 export default function ClientManager() {
   const [sessionId, setSessionId] = useState(generateSessionId());
   const [clientName, setClientName] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
   const [localhostPort, setLocalhostPort] = useState(getLocalhostPort().toString());
   const [copied, setCopied] = useState(false);
+  const [isStoring, setIsStoring] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const generateRedirectUrl = () => {
     return `${FRAMEWORK_URL}/api/callback/${sessionId}`;
@@ -25,6 +29,43 @@ export default function ClientManager() {
 
   const generateNewSession = () => {
     setSessionId(generateSessionId());
+  };
+
+  const storeSessionData = async () => {
+    if (!clientName || !clientSecret) {
+      setError('Please fill in both Client ID and Client Secret');
+      return;
+    }
+
+    setIsStoring(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          clientId: clientName,
+          clientSecret,
+          localhostPort,
+        }),
+      });
+
+      if (response.ok) {
+        setSuccess('Session data stored successfully! You can now test the OAuth flow.');
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to store session data');
+      }
+    } catch (err) {
+      setError('Failed to store session data. Please try again.');
+    } finally {
+      setIsStoring(false);
+    }
   };
 
   const buildAuthUrl = () => {
@@ -46,17 +87,44 @@ export default function ClientManager() {
           LaunchDarkly OAuth Framework
         </h1>
         
+        {/* Error/Success Messages */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+            <p className="text-green-800">{success}</p>
+          </div>
+        )}
+        
         <div className="space-y-6">
           {/* Client Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client Name
+              Client ID
             </label>
             <input
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="Enter your OAuth client name"
+              placeholder="Enter your OAuth client ID"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Client Secret */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Client Secret
+            </label>
+            <input
+              type="password"
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              placeholder="Enter your OAuth client secret"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -94,6 +162,17 @@ export default function ClientManager() {
               placeholder="3000"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          {/* Store Session Button */}
+          <div>
+            <button
+              onClick={storeSessionData}
+              disabled={isStoring}
+              className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isStoring ? 'Storing...' : 'Store Session Data'}
+            </button>
           </div>
 
           {/* Redirect URL */}
@@ -142,7 +221,8 @@ export default function ClientManager() {
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <h3 className="text-lg font-medium text-blue-900 mb-2">Instructions</h3>
             <ol className="list-decimal list-inside space-y-1 text-blue-800">
-              <li>Enter your OAuth client name</li>
+              <li>Enter your OAuth client ID and client secret</li>
+              <li>Click "Store Session Data" to save your credentials</li>
               <li>Copy the Redirect URL and use it in your LaunchDarkly OAuth client registration</li>
               <li>Set your localhost port (default: 3000)</li>
               <li>Ensure your local app is running and listening for OAuth callbacks</li>

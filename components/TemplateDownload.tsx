@@ -161,17 +161,14 @@ export default function TemplateDownload() {
             }, 5000);
         }
         
-        // Handle OAuth callback
+        // Handle OAuth callback from framework
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         
         if (code) {
-            // In a real implementation, you would exchange the code for a token
-            // For this template, we'll simulate a successful token exchange
-            const mockToken = 'mock-access-token-' + Date.now();
-            localStorage.setItem('ld_access_token', mockToken);
-            showAuthenticatedState();
-            showStatus('Authentication successful! You can now test the connection.', 'success');
+            // The framework should have already exchanged the code for a token
+            // and forwarded it to this page via POST request
+            showStatus('OAuth callback received. Check the server logs for token processing.', 'info');
             
             // Clean up the URL
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -229,6 +226,14 @@ export default function TemplateDownload() {
               <li><code>REDIRECT_URI</code> - The callback URL from the framework</li>
               <li><code>SESSION_ID</code> - Your unique session ID</li>
             </ul>
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+            <h3 className="text-lg font-medium text-green-900 mb-2">Important Note</h3>
+            <p className="text-green-800">
+              This template now expects to receive access tokens via POST request to <code>/oauth/callback</code>. 
+              The framework will handle the OAuth token exchange and forward the access token to your local server.
+            </p>
           </div>
 
           <div className="text-center">
