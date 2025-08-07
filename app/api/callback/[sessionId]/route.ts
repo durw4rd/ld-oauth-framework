@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLocalhostPort, validateSessionId, FRAMEWORK_URL } from '../../../../lib/config';
-import { getSession, exchangeCodeForToken } from '../../../../lib/oauth';
+import { validateSessionId, FRAMEWORK_URL } from '../../../../lib/config';
+import { getSession, exchangeCodeForToken, storeToken } from '../../../../lib/oauth';
 
 export async function GET(
   request: NextRequest,
@@ -39,48 +39,17 @@ export async function GET(
       const redirectUri = `${FRAMEWORK_URL}/api/callback/${sessionId}`;
       const tokenData = await exchangeCodeForToken(code, session.clientId, session.clientSecret, redirectUri);
       
-      console.log('Token exchange successful, forwarding to localhost');
+      console.log('Token exchange successful, storing token');
       
-      // Forward to localhost with access token
-      const localhostPort = session.localhostPort || getLocalhostPort();
-      
-      // Use custom callback URL if provided, otherwise use localhost
-      let targetUrl: string;
-      if (session.customCallbackUrl) {
-        // Extract base URL from custom callback URL
-        const url = new URL(session.customCallbackUrl);
-        targetUrl = `${url.protocol}//${url.host}`;
-      } else {
-        // Use ngrok URL if available, otherwise fall back to localhost
-        targetUrl = process.env.NGROK_URL || `http://localhost:${localhostPort}`;
-      }
-      
-      const localhostUrl = `${targetUrl}/oauth/callback`;
-      
-      console.log(`Forwarding token to: ${localhostUrl}`);
-      
-      const response = await fetch(localhostUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          access_token: tokenData.access_token,
-          token_type: tokenData.token_type,
-          expires_in: tokenData.expires_in,
-          sessionId: sessionId
-        }),
+      // Store the token in the framework
+      storeToken(sessionId, {
+        access_token: tokenData.access_token,
+        token_type: tokenData.token_type,
+        expires_in: tokenData.expires_in
       });
-
-      if (response.ok) {
-        console.log('Successfully forwarded token to localhost');
-        // Redirect to localhost
-        return NextResponse.redirect(`http://localhost:${localhostPort}`);
-      } else {
-        const errorText = await response.text();
-        console.error('Localhost responded with error:', response.status, errorText);
-        return NextResponse.redirect(new URL(`/?error=localhost_error&status=${response.status}&message=${encodeURIComponent(errorText)}`, request.url));
-      }
+      
+      // Redirect to token viewer page
+      return NextResponse.redirect(new URL(`/tokens/${sessionId}`, request.url));
     } catch (error) {
       console.error('Failed to process OAuth callback:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

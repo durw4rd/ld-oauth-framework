@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { generateSessionId, getLocalhostPort, FRAMEWORK_URL } from '../lib/config';
+import { generateSessionId, FRAMEWORK_URL } from '../lib/config';
 
 export default function ClientManager() {
   const [sessionId, setSessionId] = useState(generateSessionId());
   const [clientName, setClientName] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [localhostPort, setLocalhostPort] = useState(getLocalhostPort().toString());
-  const [customCallbackUrl, setCustomCallbackUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [isStoring, setIsStoring] = useState(false);
   const [error, setError] = useState('');
@@ -75,13 +73,11 @@ export default function ClientManager() {
           sessionId,
           clientId: clientName,
           clientSecret,
-          localhostPort,
-          customCallbackUrl,
         }),
       });
 
       if (response.ok) {
-        setSuccess('Session data stored successfully! You can now test the OAuth flow.');
+        setSuccess(`Session data stored successfully! You can now test the OAuth flow. After authorization, you'll be redirected to the token viewer.`);
         // Auto-check the session after storing
         setTimeout(checkSession, 500);
       } else {
@@ -183,34 +179,6 @@ export default function ClientManager() {
             </div>
           </div>
 
-          {/* Localhost Port */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Localhost Port
-            </label>
-            <input
-              type="number"
-              value={localhostPort}
-              onChange={(e) => setLocalhostPort(e.target.value)}
-              placeholder="3000"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Custom Callback URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Custom Callback URL (for testing)
-            </label>
-            <input
-              type="text"
-              value={customCallbackUrl}
-              onChange={(e) => setCustomCallbackUrl(e.target.value)}
-              placeholder="e.g., https://your-ngrok-url.ngrok.io/api/callback/your-session-id"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
           {/* Store Session Button */}
           <div>
             <button
@@ -281,9 +249,8 @@ export default function ClientManager() {
               <li>Enter your OAuth client ID and client secret</li>
               <li>Click &quot;Store Session Data&quot; to save your credentials</li>
               <li>Copy the Redirect URL and use it in your LaunchDarkly OAuth client registration</li>
-              <li>Set your localhost port (default: 3000)</li>
-              <li>Ensure your local app is running and listening for OAuth callbacks</li>
-              <li>Test the flow using the Authorization URL</li>
+              <li>Test the OAuth flow using the Authorization URL</li>
+              <li>You&apos;ll be redirected to a token viewer where you can test and download templates</li>
             </ol>
           </div>
         </div>

@@ -51,7 +51,17 @@ interface SessionData {
   expiresAt: number;
 }
 
+// Token storage interface
+interface TokenData {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  sessionId: string;
+  receivedAt: number;
+}
+
 const sessions = new Map<string, SessionData>();
+const tokens = new Map<string, TokenData>();
 
 // Session expiration time (24 hours)
 const SESSION_EXPIRY_HOURS = 24;
@@ -156,6 +166,42 @@ export const getAllSessions = () => {
   }
   
   return activeSessions;
+};
+
+// Token storage functions
+export const storeToken = (sessionId: string, tokenData: Omit<TokenData, 'sessionId' | 'receivedAt'>) => {
+  const token: TokenData = {
+    ...tokenData,
+    sessionId,
+    receivedAt: Date.now()
+  };
+  
+  tokens.set(sessionId, token);
+  console.log(`Token stored for session: ${sessionId}`);
+};
+
+export const getToken = (sessionId: string) => {
+  return tokens.get(sessionId);
+};
+
+export const getAllTokens = () => {
+  const tokenList = [];
+  
+  for (const [sessionId, token] of tokens.entries()) {
+    tokenList.push({
+      sessionId,
+      hasToken: !!token.access_token,
+      tokenType: token.token_type,
+      expiresIn: token.expires_in,
+      receivedAt: new Date(token.receivedAt).toISOString()
+    });
+  }
+  
+  return tokenList;
+};
+
+export const clearToken = (sessionId: string) => {
+  tokens.delete(sessionId);
 };
 
 export const exchangeCodeForToken = async (code: string, clientId: string, clientSecret: string, redirectUri: string) => {
