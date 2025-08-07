@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import { storage } from './storage';
+
 export interface OAuthConfig {
   clientId: string;
   redirectUri: string;
@@ -66,26 +70,107 @@ const tokens = new Map<string, TokenData>();
 // Session expiration time (24 hours)
 const SESSION_EXPIRY_HOURS = 24;
 
-export const storeSession = (sessionId: string, clientId: string, clientSecret: string, localhostPort: string, customCallbackUrl?: string) => {
+// Enhanced session storage with better error handling
+const loadSessionsFromFile = () => {
+  // Only load from file in development
+  if (process.env.NODE_ENV !== 'development') {
+    console.log('Skipping file-based session loading in production');
+    return;
+  }
+
+  try {
+    const SESSION_FILE = path.join(process.cwd(), '.sessions.json');
+    if (fs.existsSync(SESSION_FILE)) {
+      const data = fs.readFileSync(SESSION_FILE, 'utf8');
+      const fileSessions = JSON.parse(data) as Record<string, SessionData>;
+      const now = Date.now();
+      
+      // Only load non-expired sessions
+      for (const [sessionId, sessionData] of Object.entries(fileSessions)) {
+        if (sessionData.expiresAt > now) {
+          sessions.set(sessionId, sessionData);
+        }
+      }
+      
+      console.log(`Loaded ${sessions.size} sessions from file (development only)`);
+    }
+  } catch (error) {
+    console.error('Error loading sessions from file:', error);
+  }
+};
+
+const saveSessionsToFile = () => {
+  // Only save to file in development
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
+
+  try {
+    const SESSION_FILE = path.join(process.cwd(), '.sessions.json');
+    const sessionsData = Object.fromEntries(sessions.entries());
+    fs.writeFileSync(SESSION_FILE, JSON.stringify(sessionsData, null, 2));
+  } catch (error) {
+    console.error('Error saving sessions to file:', error);
+  }
+};
+
+// Load sessions on startup (development only)
+loadSessionsFromFile();
+
+export const storeSession = async (sessionId: string, clientId: string, clientSecret: string, localhostPort: string, customCallbackUrl?: string) => {
   const now = Date.now();
   const expiresAt = now + (SESSION_EXPIRY_HOURS * 60 * 60 * 1000);
   
-  sessions.set(sessionId, { 
+  const sessionData: SessionData = {
     clientId, 
     clientSecret, 
     localhostPort, 
     customCallbackUrl,
     createdAt: now,
     expiresAt 
-  });
+  };
+  
+  // Store in memory (for backward compatibility)
+  sessions.set(sessionId, sessionData);
+  
+  // Store in persistent storage
+  await storage.set(`session:${sessionId}`, JSON.stringify(sessionData), SESSION_EXPIRY_HOURS * 3600);
+  
+  // Save to file for persistence (development only)
+  saveSessionsToFile();
   
   console.log(`Session stored for: ${sessionId}, expires at: ${new Date(expiresAt).toISOString()}`);
+  console.log(`Total sessions in memory: ${sessions.size}`);
+  console.log(`Session keys: ${Array.from(sessions.keys()).join(', ')}`);
 };
 
-export const getSession = (sessionId: string) => {
-  const session = sessions.get(sessionId);
+export const getSession = async (sessionId: string) => {
+  console.log(`Looking for session: ${sessionId}`);
+  console.log(`Total sessions in memory: ${sessions.size}`);
+  console.log(`Available session keys: ${Array.from(sessions.keys()).join(', ')}`);
+  
+  // First check in-memory storage
+  let session = sessions.get(sessionId);
   
   if (!session) {
+    // Try persistent storage
+    const sessionData = await storage.get(`session:${sessionId}`);
+    if (sessionData) {
+      try {
+        const parsedData = JSON.parse(sessionData) as SessionData;
+        
+        // Cache in memory
+        sessions.set(sessionId, parsedData);
+        session = parsedData;
+      } catch (error) {
+        console.error('Error parsing session data:', error);
+        return null;
+      }
+    }
+  }
+  
+  if (!session) {
+    console.log(`Session not found: ${sessionId}`);
     return null;
   }
   
@@ -93,9 +178,11 @@ export const getSession = (sessionId: string) => {
   if (Date.now() > session.expiresAt) {
     console.log(`Session expired: ${sessionId}`);
     sessions.delete(sessionId);
+    await storage.delete(`session:${sessionId}`);
     return null;
   }
   
+  console.log(`Session found: ${sessionId}, expires at: ${new Date(session.expiresAt).toISOString()}`);
   return session;
 };
 

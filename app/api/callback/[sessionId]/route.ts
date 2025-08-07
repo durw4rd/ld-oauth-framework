@@ -24,7 +24,7 @@ export async function GET(
   }
 
   // Get session data
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) {
     console.error('Session not found:', sessionId);
     return NextResponse.redirect(new URL('/?error=session_not_found', request.url));

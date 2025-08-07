@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store session data
-    storeSession(sessionId, clientId, clientSecret, '3000');
+    await storeSession(sessionId, clientId, clientSecret, '3000');
 
     console.log(`Session stored for: ${sessionId}`);
 
