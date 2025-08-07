@@ -8,10 +8,12 @@ export default function ClientManager() {
   const [clientName, setClientName] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [localhostPort, setLocalhostPort] = useState(getLocalhostPort().toString());
+  const [customCallbackUrl, setCustomCallbackUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [isStoring, setIsStoring] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   const generateRedirectUrl = () => {
     return `${FRAMEWORK_URL}/api/callback/${sessionId}`;
@@ -31,6 +33,27 @@ export default function ClientManager() {
     setSessionId(generateSessionId());
   };
 
+  const checkSession = async () => {
+    try {
+      const response = await fetch(`/api/session/debug?sessionId=${sessionId}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        const timeRemaining = data.timeRemaining || 0;
+        const hours = Math.floor(timeRemaining / 60);
+        const minutes = timeRemaining % 60;
+        
+        setDebugInfo(`✅ Session verified! Client ID: ${data.hasClientId ? 'Set' : 'Missing'}, Client Secret: ${data.hasClientSecret ? 'Set' : 'Missing'}, Port: ${data.localhostPort}. Expires in: ${hours}h ${minutes}m`);
+      } else if (data.expired) {
+        setDebugInfo('❌ Session expired. Please store session data again.');
+      } else {
+        setDebugInfo('❌ Session not found. Please store session data first.');
+      }
+    } catch (err) {
+      setDebugInfo(`❌ Error checking session: ${err}`);
+    }
+  };
+
   const storeSessionData = async () => {
     if (!clientName || !clientSecret) {
       setError('Please fill in both Client ID and Client Secret');
@@ -40,6 +63,7 @@ export default function ClientManager() {
     setIsStoring(true);
     setError('');
     setSuccess('');
+    setDebugInfo('');
 
     try {
       const response = await fetch('/api/session', {
@@ -52,11 +76,14 @@ export default function ClientManager() {
           clientId: clientName,
           clientSecret,
           localhostPort,
+          customCallbackUrl,
         }),
       });
 
       if (response.ok) {
         setSuccess('Session data stored successfully! You can now test the OAuth flow.');
+        // Auto-check the session after storing
+        setTimeout(checkSession, 500);
       } else {
         const data = await response.json();
         setError(data.error || 'Failed to store session data');
@@ -100,6 +127,12 @@ export default function ClientManager() {
           </div>
         )}
         
+        {debugInfo && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+            <p className="text-yellow-800">{debugInfo}</p>
+          </div>
+        )}
+
         <div className="space-y-6">
           {/* Client Name */}
           <div>
@@ -164,6 +197,20 @@ export default function ClientManager() {
             />
           </div>
 
+          {/* Custom Callback URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Custom Callback URL (for testing)
+            </label>
+            <input
+              type="text"
+              value={customCallbackUrl}
+              onChange={(e) => setCustomCallbackUrl(e.target.value)}
+              placeholder="e.g., https://your-ngrok-url.ngrok.io/api/callback/your-session-id"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           {/* Store Session Button */}
           <div>
             <button
@@ -215,6 +262,16 @@ export default function ClientManager() {
                 Copy
               </button>
             </div>
+          </div>
+
+          {/* Debug Session Button */}
+          <div>
+            <button
+              onClick={checkSession}
+              className="w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              Debug Session
+            </button>
           </div>
 
           {/* Instructions */}

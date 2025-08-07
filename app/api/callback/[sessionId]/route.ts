@@ -43,7 +43,21 @@ export async function GET(
       
       // Forward to localhost with access token
       const localhostPort = session.localhostPort || getLocalhostPort();
-      const localhostUrl = `http://localhost:${localhostPort}/oauth/callback`;
+      
+      // Use custom callback URL if provided, otherwise use localhost
+      let targetUrl: string;
+      if (session.customCallbackUrl) {
+        // Extract base URL from custom callback URL
+        const url = new URL(session.customCallbackUrl);
+        targetUrl = `${url.protocol}//${url.host}`;
+      } else {
+        // Use ngrok URL if available, otherwise fall back to localhost
+        targetUrl = process.env.NGROK_URL || `http://localhost:${localhostPort}`;
+      }
+      
+      const localhostUrl = `${targetUrl}/oauth/callback`;
+      
+      console.log(`Forwarding token to: ${localhostUrl}`);
       
       const response = await fetch(localhostUrl, {
         method: 'POST',

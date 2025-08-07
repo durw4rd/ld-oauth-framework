@@ -4,7 +4,7 @@ import { storeSession } from '../../../lib/oauth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, clientId, clientSecret, localhostPort } = body;
+    const { sessionId, clientId, clientSecret, localhostPort, customCallbackUrl } = body;
 
     if (!sessionId || !clientId || !clientSecret) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store session data
-    storeSession(sessionId, clientId, clientSecret, localhostPort || '3000');
+    storeSession(sessionId, clientId, clientSecret, localhostPort || '3000', customCallbackUrl);
 
     console.log(`Session stored for: ${sessionId}`);
 
