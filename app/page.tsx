@@ -25,10 +25,11 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Auto Setup</h2>
               <p className="text-gray-600 mb-4">
                 Create a new OAuth client automatically using your LaunchDarkly API token.
+                <span className="text-yellow-600 font-medium"> Note: This feature may not be available if LaunchDarkly doesn&apos;t support OAuth client creation via API.</span>
               </p>
               <Link
                 href="/create"
-                className="inline-block w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-center"
+                className="inline-block w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors text-center"
               >
                 Create OAuth Client
               </Link>

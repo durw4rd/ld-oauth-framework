@@ -1,34 +1,39 @@
 // LaunchDarkly API integration for OAuth client management
 
 export interface OAuthClient {
-  id: string;
+  _links: Record<string, unknown>;
   name: string;
-  redirectUris: string[];
-  clientId: string;
-  clientSecret: string;
-  createdAt: string;
+  _accountId: string;
+  _clientId: string;
+  redirectUri: string;
+  _creationDate: number;
+  description: string | null;
+  _clientSecret: string | null;
 }
 
 export interface CreateOAuthClientRequest {
   name: string;
-  redirectUris: string[];
+  redirectUri: string;
+  description?: string;
 }
 
 export interface CreateOAuthClientResponse {
-  id: string;
+  _links: Record<string, unknown>;
   name: string;
-  redirectUris: string[];
-  clientId: string;
-  clientSecret: string;
-  createdAt: string;
+  _accountId: string;
+  _clientId: string;
+  redirectUri: string;
+  _creationDate: number;
+  description: string | null;
+  _clientSecret: string | null;
 }
 
 export const createOAuthClient = async (apiToken: string, clientData: CreateOAuthClientRequest): Promise<CreateOAuthClientResponse> => {
   try {
-    const response = await fetch('https://app.launchdarkly.com/api/v2/oauth-clients', {
+    const response = await fetch('https://app.launchdarkly.com/api/v2/oauth/clients', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiToken}`,
+        'Authorization': apiToken,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(clientData),
@@ -50,9 +55,9 @@ export const createOAuthClient = async (apiToken: string, clientData: CreateOAut
 
 export const listOAuthClients = async (apiToken: string): Promise<OAuthClient[]> => {
   try {
-    const response = await fetch('https://app.launchdarkly.com/api/v2/oauth-clients', {
+    const response = await fetch('https://app.launchdarkly.com/api/v2/oauth/clients', {
       headers: {
-        'Authorization': `Bearer ${apiToken}`,
+        'Authorization': apiToken,
         'Content-Type': 'application/json',
       },
     });
@@ -73,10 +78,10 @@ export const listOAuthClients = async (apiToken: string): Promise<OAuthClient[]>
 
 export const deleteOAuthClient = async (apiToken: string, clientId: string): Promise<void> => {
   try {
-    const response = await fetch(`https://app.launchdarkly.com/api/v2/oauth-clients/${clientId}`, {
+    const response = await fetch(`https://app.launchdarkly.com/api/v2/oauth/clients/${clientId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${apiToken}`,
+        'Authorization': apiToken,
         'Content-Type': 'application/json',
       },
     });

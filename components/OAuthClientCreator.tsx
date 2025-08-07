@@ -3,13 +3,16 @@
 import { useState } from 'react';
 import { generateSessionId, FRAMEWORK_URL } from '../lib/config';
 
+// Updated OAuthClient interface
 interface OAuthClient {
-  id: string;
+  _links: Record<string, unknown>;
   name: string;
-  redirectUris: string[];
-  clientId: string;
-  clientSecret: string;
-  createdAt: string;
+  _accountId: string;
+  _clientId: string;
+  redirectUri: string;
+  _creationDate: number;
+  description: string | null;
+  _clientSecret: string | null;
 }
 
 export default function OAuthClientCreator() {
@@ -21,31 +24,27 @@ export default function OAuthClientCreator() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const generateRedirectUrl = () => {
-    return `${FRAMEWORK_URL}/api/callback/${sessionId}`;
-  };
+  const generateRedirectUrl = () => `${FRAMEWORK_URL}/api/callback/${sessionId}`;
 
   const createClient = async () => {
-    if (!apiToken || !clientName) {
-      setError('Please fill in both API Token and Client Name');
+    if (!apiToken || !clientName || !sessionId) {
+      setError('Please fill in all required fields');
       return;
     }
 
     setIsCreating(true);
     setError('');
     setSuccess('');
-    setCreatedClient(null);
 
     try {
       const response = await fetch('/api/oauth-clients', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiToken,
           name: clientName,
-          redirectUris: [generateRedirectUrl()]
+          redirectUri: generateRedirectUrl(),
+          sessionId
         }),
       });
 
@@ -55,13 +54,13 @@ export default function OAuthClientCreator() {
         setCreatedClient(data.client);
         setSuccess('OAuth client created successfully! Client credentials have been saved.');
         
-        // Auto-store session data with the new client credentials
-        await storeSessionData(data.client.clientId, data.client.clientSecret);
+        // Auto-save the client credentials
+        await storeSessionData(data.client._clientId, data.client._clientSecret);
       } else {
         setError(data.error || 'Failed to create OAuth client');
       }
     } catch {
-      setError('Failed to create OAuth client. Please check your API token and try again.');
+      setError('Failed to create OAuth client. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -236,11 +235,11 @@ export default function OAuthClientCreator() {
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="font-medium text-gray-700">Client ID:</span>
-                  <span className="ml-2 text-gray-900">{createdClient.clientId}</span>
+                  <span className="ml-2 text-gray-900">{createdClient._clientId}</span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Client Secret:</span>
-                  <span className="ml-2 text-gray-900">{createdClient.clientSecret}</span>
+                  <span className="ml-2 text-gray-900">{createdClient._clientSecret}</span>
                   <span className="ml-2 text-red-600 text-xs">(Save this - it won&apos;t be shown again)</span>
                 </div>
                 <div>
@@ -249,7 +248,7 @@ export default function OAuthClientCreator() {
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Redirect URL:</span>
-                  <span className="ml-2 text-gray-900">{createdClient.redirectUris[0]}</span>
+                  <span className="ml-2 text-gray-900">{createdClient.redirectUri}</span>
                 </div>
               </div>
             </div>
@@ -272,12 +271,12 @@ export default function OAuthClientCreator() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient.clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUris[0])}&response_type=code&scope=reader`}
+                  value={`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient._clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUri)}&response_type=code&scope=reader`}
                   readOnly
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
                 />
                 <button
-                  onClick={() => copyToClipboard(`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient.clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUris[0])}&response_type=code&scope=reader`)}
+                  onClick={() => copyToClipboard(`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient._clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUri)}&response_type=code&scope=reader`)}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   Copy
@@ -288,7 +287,7 @@ export default function OAuthClientCreator() {
             {/* Test Button */}
             <div className="text-center">
               <a
-                href={`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient.clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUris[0])}&response_type=code&scope=reader`}
+                href={`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient._clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUri)}&response_type=code&scope=reader`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
