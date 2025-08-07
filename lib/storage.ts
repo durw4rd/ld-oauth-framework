@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
 
 // Storage abstraction for different environments
 export interface StorageBackend {
@@ -38,61 +38,70 @@ class InMemoryStorage implements StorageBackend {
   }
 }
 
-// Vercel KV storage (recommended for production)
-class VercelKVStorage implements StorageBackend {
-  private kvClient: typeof kv | null = null;
+// Redis storage (production)
+class RedisStorage implements StorageBackend {
+  private redis: ReturnType<typeof createClient> | null = null;
 
   constructor() {
-    // Try to use Vercel KV
+    // Try to create Redis client
     try {
-      this.kvClient = kv;
-      console.log('Vercel KV client initialized successfully');
+      this.redis = createClient({
+        url: process.env.REDIS_URL,
+      });
+      
+      // Connect to Redis
+      this.redis.connect().then(() => {
+        console.log('Redis client connected successfully');
+      }).catch((error) => {
+        console.warn('Failed to connect to Redis, falling back to in-memory storage:', error);
+        this.redis = null;
+      });
     } catch (error) {
-      console.warn('Vercel KV not available, falling back to in-memory storage:', error);
-      this.kvClient = null;
+      console.warn('Redis not available, falling back to in-memory storage:', error);
+      this.redis = null;
     }
   }
 
   async get(key: string): Promise<string | null> {
-    if (!this.kvClient) return null;
+    if (!this.redis) return null;
     try {
-      const value = await this.kvClient.get(key);
+      const value = await this.redis.get(key);
       return value ? String(value) : null;
     } catch (error) {
-      console.error('Error getting from Vercel KV:', error);
+      console.error('Error getting from Redis:', error);
       return null;
     }
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
-    if (!this.kvClient) return;
+    if (!this.redis) return;
     try {
       if (ttl) {
-        await this.kvClient.setex(key, ttl, value);
+        await this.redis.setEx(key, ttl, value);
       } else {
-        await this.kvClient.set(key, value);
+        await this.redis.set(key, value);
       }
     } catch (error) {
-      console.error('Error setting in Vercel KV:', error);
+      console.error('Error setting in Redis:', error);
     }
   }
 
   async delete(key: string): Promise<void> {
-    if (!this.kvClient) return;
+    if (!this.redis) return;
     try {
-      await this.kvClient.del(key);
+      await this.redis.del(key);
     } catch (error) {
-      console.error('Error deleting from Vercel KV:', error);
+      console.error('Error deleting from Redis:', error);
     }
   }
 
   async list(prefix: string): Promise<string[]> {
-    if (!this.kvClient) return [];
+    if (!this.redis) return [];
     try {
-      const keys = await this.kvClient.keys(`${prefix}*`);
-      return keys;
+      const keys = await this.redis.keys(`${prefix}*`);
+      return keys.map(key => String(key));
     } catch (error) {
-      console.error('Error listing from Vercel KV:', error);
+      console.error('Error listing from Redis:', error);
       return [];
     }
   }
@@ -100,9 +109,9 @@ class VercelKVStorage implements StorageBackend {
 
 // Storage factory
 export function createStorage(): StorageBackend {
-  // In production, try to use Vercel KV if available
-  if (process.env.NODE_ENV === 'production' && process.env.KV_URL) {
-    return new VercelKVStorage();
+  // In production, try to use Redis if available
+  if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+    return new RedisStorage();
   }
   
   // Fallback to in-memory storage
