@@ -1,4 +1,4 @@
-import { createClient } from '@vercel/kv';
+import { kv } from '@vercel/kv';
 
 // Storage abstraction for different environments
 export interface StorageBackend {
@@ -40,25 +40,23 @@ class InMemoryStorage implements StorageBackend {
 
 // Vercel KV storage (recommended for production)
 class VercelKVStorage implements StorageBackend {
-  private kv: ReturnType<typeof createClient> | null = null;
+  private kvClient: typeof kv | null = null;
 
   constructor() {
-    // Try to import Vercel KV
+    // Try to use Vercel KV
     try {
-      this.kv = createClient({
-        url: process.env.KV_URL,
-        token: process.env.KV_REST_API_TOKEN,
-      });
-    } catch {
-      console.warn('Vercel KV not available, falling back to in-memory storage');
-      this.kv = null;
+      this.kvClient = kv;
+      console.log('Vercel KV client initialized successfully');
+    } catch (error) {
+      console.warn('Vercel KV not available, falling back to in-memory storage:', error);
+      this.kvClient = null;
     }
   }
 
   async get(key: string): Promise<string | null> {
-    if (!this.kv) return null;
+    if (!this.kvClient) return null;
     try {
-      const value = await this.kv.get(key);
+      const value = await this.kvClient.get(key);
       return value ? String(value) : null;
     } catch (error) {
       console.error('Error getting from Vercel KV:', error);
@@ -67,12 +65,12 @@ class VercelKVStorage implements StorageBackend {
   }
 
   async set(key: string, value: string, ttl?: number): Promise<void> {
-    if (!this.kv) return;
+    if (!this.kvClient) return;
     try {
       if (ttl) {
-        await this.kv.setex(key, ttl, value);
+        await this.kvClient.setex(key, ttl, value);
       } else {
-        await this.kv.set(key, value);
+        await this.kvClient.set(key, value);
       }
     } catch (error) {
       console.error('Error setting in Vercel KV:', error);
@@ -80,18 +78,18 @@ class VercelKVStorage implements StorageBackend {
   }
 
   async delete(key: string): Promise<void> {
-    if (!this.kv) return;
+    if (!this.kvClient) return;
     try {
-      await this.kv.del(key);
+      await this.kvClient.del(key);
     } catch (error) {
       console.error('Error deleting from Vercel KV:', error);
     }
   }
 
   async list(prefix: string): Promise<string[]> {
-    if (!this.kv) return [];
+    if (!this.kvClient) return [];
     try {
-      const keys = await this.kv.keys(`${prefix}*`);
+      const keys = await this.kvClient.keys(`${prefix}*`);
       return keys;
     } catch (error) {
       console.error('Error listing from Vercel KV:', error);
