@@ -61,7 +61,7 @@ export default function ClientManager() {
         const data = await response.json();
         setError(data.error || 'Failed to store session data');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to store session data. Please try again.');
     } finally {
       setIsStoring(false);
@@ -222,7 +222,7 @@ export default function ClientManager() {
             <h3 className="text-lg font-medium text-blue-900 mb-2">Instructions</h3>
             <ol className="list-decimal list-inside space-y-1 text-blue-800">
               <li>Enter your OAuth client ID and client secret</li>
-              <li>Click "Store Session Data" to save your credentials</li>
+              <li>Click &quot;Store Session Data&quot; to save your credentials</li>
               <li>Copy the Redirect URL and use it in your LaunchDarkly OAuth client registration</li>
               <li>Set your localhost port (default: 3000)</li>
               <li>Ensure your local app is running and listening for OAuth callbacks</li>
