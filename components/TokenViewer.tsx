@@ -26,8 +26,49 @@ interface SessionData {
 
 interface TestResult {
   success?: boolean;
-  data?: Record<string, unknown>;
+  data?: {
+    accountId?: string;
+    projectId?: string;
+    projectName?: string;
+    environmentId?: string;
+    environmentName?: string;
+    authKind?: string;
+    tokenKind?: string;
+    clientId?: string;
+    memberId?: string;
+    serviceToken?: boolean;
+  };
   error?: string;
+}
+
+interface LaunchDarklyData {
+  identity: {
+    accountId?: string;
+    projectId?: string;
+    projectName?: string;
+    environmentId?: string;
+    environmentName?: string;
+    authKind?: string;
+    tokenKind?: string;
+    clientId?: string;
+    memberId?: string;
+    serviceToken?: boolean;
+  };
+  flags: Array<{
+    name: string;
+    key: string;
+    archived: boolean;
+  }>;
+  projects: Array<{
+    name: string;
+    key: string;
+  }>;
+  summary: {
+    totalFlags: number;
+    totalProjects: number;
+    currentProject?: string;
+    currentEnvironment?: string;
+  };
 }
 
 export default function TokenViewer({ sessionId }: TokenViewerProps) {
@@ -37,6 +78,8 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [ldData, setLdData] = useState<LaunchDarklyData | null>(null);
+  const [isLoadingLdData, setIsLoadingLdData] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -134,6 +177,40 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
     }
   };
 
+  const loadLaunchDarklyData = async () => {
+    if (!tokenData?.access_token) {
+      alert('No access token available');
+      return;
+    }
+
+    setIsLoadingLdData(true);
+    setLdData(null);
+
+    try {
+      const response = await fetch('/api/ld-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: tokenData.access_token,
+          sessionId: sessionIdValue
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setLdData(result.data);
+      } else {
+        alert('Failed to load LaunchDarkly data: ' + result.error);
+      }
+    } catch {
+      alert('Error loading LaunchDarkly data');
+    } finally {
+      setIsLoadingLdData(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -198,6 +275,16 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
                 Download Template
               </button>
             </div>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={loadLaunchDarklyData}
+                disabled={!tokenData?.access_token || isLoadingLdData}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {isLoadingLdData ? 'Loading...' : 'Load Account Data'}
+              </button>
+            </div>
           </div>
 
           {/* Test Results */}
@@ -206,20 +293,149 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
               testResult.error ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
             }`}>
               <h3 className="text-lg font-medium mb-2">
-                {testResult.error ? '❌ Test Failed' : '✅ Test Successful'}
+                {testResult.error ? '❌ Test Failed' : '✅ LaunchDarkly Connection Successful'}
               </h3>
               {testResult.error ? (
                 <p className="text-red-800">{testResult.error}</p>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-green-800">Connection to LaunchDarkly API successful!</p>
+                <div className="space-y-4">
+                  <p className="text-green-800 font-medium">Your OAuth token is working correctly!</p>
+                  
                   {testResult.data && (
-                    <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-                      {JSON.stringify(testResult.data, null, 2)}
-                    </pre>
+                    <div className="bg-white border border-green-200 rounded-md p-4">
+                      <h4 className="font-medium text-gray-900 mb-3">Account Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {testResult.data.accountId && (
+                          <div>
+                            <span className="font-medium text-gray-700">Account ID:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.accountId}</span>
+                          </div>
+                        )}
+                        {testResult.data.projectName && (
+                          <div>
+                            <span className="font-medium text-gray-700">Project:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.projectName}</span>
+                          </div>
+                        )}
+                        {testResult.data.environmentName && (
+                          <div>
+                            <span className="font-medium text-gray-700">Environment:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.environmentName}</span>
+                          </div>
+                        )}
+                        {testResult.data.authKind && (
+                          <div>
+                            <span className="font-medium text-gray-700">Auth Type:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.authKind}</span>
+                          </div>
+                        )}
+                        {testResult.data.tokenKind && (
+                          <div>
+                            <span className="font-medium text-gray-700">Token Type:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.tokenKind}</span>
+                          </div>
+                        )}
+                        {testResult.data.clientId && (
+                          <div>
+                            <span className="font-medium text-gray-700">Client ID:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.clientId}</span>
+                          </div>
+                        )}
+                        {testResult.data.memberId && (
+                          <div>
+                            <span className="font-medium text-gray-700">Member ID:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.memberId}</span>
+                          </div>
+                        )}
+                        {testResult.data.serviceToken !== undefined && (
+                          <div>
+                            <span className="font-medium text-gray-700">Service Token:</span>
+                            <span className="ml-2 text-gray-900">{testResult.data.serviceToken ? 'Yes' : 'No'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <p className="text-blue-800 text-sm">
+                      <strong>What this means:</strong> Your OAuth token has successfully authenticated with LaunchDarkly 
+                      and can access the account information above. This proves your OAuth integration is working correctly!
+                    </p>
+                  </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* LaunchDarkly Account Data */}
+          {ldData && (
+            <div className="bg-purple-50 border border-purple-200 rounded-md p-4">
+              <h3 className="text-lg font-medium text-purple-900 mb-3">LaunchDarkly Account Data</h3>
+              
+              {/* Summary */}
+              <div className="bg-white border border-purple-200 rounded-md p-3 mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Account Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Projects:</span>
+                    <span className="ml-2 text-gray-900">{ldData.summary.totalProjects}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Feature Flags:</span>
+                    <span className="ml-2 text-gray-900">{ldData.summary.totalFlags}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Current Project:</span>
+                    <span className="ml-2 text-gray-900">{ldData.summary.currentProject || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Environment:</span>
+                    <span className="ml-2 text-gray-900">{ldData.summary.currentEnvironment || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Projects */}
+              {ldData.projects && ldData.projects.length > 0 && (
+                <div className="bg-white border border-purple-200 rounded-md p-3 mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Projects</h4>
+                  <div className="space-y-2">
+                    {ldData.projects.map((project, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span className="font-medium">{project.name}</span>
+                        <span className="text-sm text-gray-600">{project.key}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Feature Flags */}
+              {ldData.flags && ldData.flags.length > 0 && (
+                <div className="bg-white border border-purple-200 rounded-md p-3">
+                  <h4 className="font-medium text-gray-900 mb-2">Feature Flags</h4>
+                  <div className="space-y-2">
+                    {ldData.flags.map((flag, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span className="font-medium">{flag.name}</span>
+                        <span className={`text-sm px-2 py-1 rounded ${
+                          flag.archived ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {flag.archived ? 'Archived' : 'Active'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-4">
+                <p className="text-blue-800 text-sm">
+                  <strong>Demonstration:</strong> This data shows that your OAuth token has full read access to your 
+                  LaunchDarkly account, including projects and feature flags. This proves your OAuth integration is working perfectly!
+                </p>
+              </div>
             </div>
           )}
 
