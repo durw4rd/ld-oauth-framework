@@ -7,7 +7,7 @@ export default function TemplateDownload() {
 
   const generateTemplate = async () => {
     setIsGenerating(true);
-    
+
     try {
       // Create the template HTML content
       const templateContent = `<!DOCTYPE html>
@@ -190,7 +190,7 @@ export default function TemplateDownload() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
     } catch (error) {
       console.error('Failed to generate template:', error);
     } finally {
@@ -204,7 +204,7 @@ export default function TemplateDownload() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
           Static Site Template
         </h1>
-        
+
         <div className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <h3 className="text-lg font-medium text-blue-900 mb-2">About the Template</h3>
@@ -218,11 +218,11 @@ export default function TemplateDownload() {
               <li>Simple UI for testing and verification</li>
             </ul>
           </div>
-          
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
             <h3 className="text-lg font-medium text-yellow-900 mb-2">Before Using</h3>
             <p className="text-yellow-800">
-              After downloading, you'll need to update these values in the template:
+              After downloading, you&apos;ll need to update these values in the template:
             </p>
             <ul className="list-disc list-inside mt-2 text-yellow-800 space-y-1">
               <li><code>CLIENT_ID</code> - Your LaunchDarkly OAuth client ID</li>
@@ -230,7 +230,7 @@ export default function TemplateDownload() {
               <li><code>SESSION_ID</code> - Your unique session ID</li>
             </ul>
           </div>
-          
+
           <div className="text-center">
             <button
               onClick={generateTemplate}

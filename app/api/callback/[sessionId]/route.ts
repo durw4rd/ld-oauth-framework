@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLocalhostPort, validateSessionId } from '../../../../lib/config';
 
+type Props = {
+  params: { sessionId: string };
+};
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: Props
 ) {
-  const { sessionId } = params;
+  const { sessionId } = await params;
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');

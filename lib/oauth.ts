@@ -22,7 +22,7 @@ export const buildAuthUrl = (clientId: string, redirectUri: string): string => {
   return `${LAUNCHDARKLY_OAUTH_CONFIG.authUrl}?${params.toString()}`;
 };
 
-export const testConnection = async (accessToken: string): Promise<any> => {
+export const testConnection = async (accessToken: string): Promise<Record<string, unknown>> => {
   try {
     const response = await fetch(LAUNCHDARKLY_OAUTH_CONFIG.callerIdentityUrl, {
       headers: {
