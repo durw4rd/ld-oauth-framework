@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLocalhostPort, validateSessionId } from '../../../../lib/config';
 
-type Props = {
-  params: { sessionId: string };
-};
-
 export async function GET(
   request: NextRequest,
-  { params }: Props
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
   const { searchParams } = new URL(request.url);
