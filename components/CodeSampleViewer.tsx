@@ -54,6 +54,7 @@ app.get('/', (req, res) => {
         <strong>📋 Important:</strong> When configuring your OAuth client, use this callback URL:
         <br><code style="background: #fff; padding: 5px; border-radius: 3px;">http://localhost:3000/callback</code>
         <br><small>✅ This server works with both direct OAuth and framework proxy - no code changes needed!</small>
+        <br><small>🔧 Framework proxy automatically uses correct redirect URI for token exchange</small>
       </div>
       <a href="/auth" class="button">Start OAuth Flow</a>
       <p><small>Available routes:</small></p>
@@ -89,12 +90,20 @@ app.get('/callback', async (req, res) => {
 
   try {
     // Exchange code for access token (works with both direct OAuth and framework proxy)
+    // When using framework proxy, use the framework's redirect URI for token exchange
+    // This ensures the redirect_uri matches what was used in the authorization request
+    const tokenExchangeRedirectUri = sessionId 
+      ? \`https://ld-oauth-framework.vercel.app/api/callback/\${sessionId}\`
+      : REDIRECT_URI;
+    
+    console.log('Token exchange redirect URI:', tokenExchangeRedirectUri);
+    
     const tokenResponse = await axios.post('https://app.launchdarkly.com/trust/oauth/token', {
       grant_type: 'authorization_code',
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
       code,
-      redirect_uri: REDIRECT_URI
+      redirect_uri: tokenExchangeRedirectUri
     }, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

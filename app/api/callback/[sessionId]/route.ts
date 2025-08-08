@@ -35,7 +35,19 @@ export async function GET(
     try {
       console.log(`Processing OAuth callback for session: ${sessionId}`);
       
-      // Exchange code for token
+      // Check if there's a custom callback URL to forward to (ngrok-like proxy behavior)
+      if (session.customCallbackUrl) {
+        console.log(`Forwarding authorization code to: ${session.customCallbackUrl}`);
+        // Forward the original authorization code to the local server
+        const callbackUrl = new URL(session.customCallbackUrl);
+        callbackUrl.searchParams.set('code', code);
+        // Also include sessionId for framework-specific features
+        callbackUrl.searchParams.set('sessionId', sessionId);
+        return NextResponse.redirect(callbackUrl);
+      }
+      
+      // If no custom callback URL, do token exchange in framework (original behavior)
+      console.log('No custom callback URL, performing token exchange in framework');
       const redirectUri = `${FRAMEWORK_URL}/api/callback/${sessionId}`;
       const tokenData = await exchangeCodeForToken(code, session.clientId, session.clientSecret, redirectUri);
       
@@ -47,17 +59,6 @@ export async function GET(
         token_type: tokenData.token_type,
         expires_in: tokenData.expires_in
       });
-      
-      // Check if there's a custom callback URL to redirect back to the original app
-      if (session.customCallbackUrl) {
-        console.log(`Redirecting to custom callback URL: ${session.customCallbackUrl}`);
-        // Forward the original authorization code to maintain compatibility
-        const callbackUrl = new URL(session.customCallbackUrl);
-        callbackUrl.searchParams.set('code', code);
-        // Also include sessionId for framework-specific features
-        callbackUrl.searchParams.set('sessionId', sessionId);
-        return NextResponse.redirect(callbackUrl);
-      }
       
       // Fallback: Redirect to framework homepage with success message
       return NextResponse.redirect(new URL(`/?success=oauth_completed&sessionId=${sessionId}`, request.url));
