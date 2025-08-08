@@ -50,6 +50,10 @@ app.get('/', (req, res) => {
     <body>
       <h1>LaunchDarkly OAuth Client</h1>
       <p>This is a simple OAuth client for LaunchDarkly. Click the button below to start the OAuth flow.</p>
+      <div style="background: #f0f8ff; border: 1px solid #0066cc; padding: 15px; border-radius: 5px; margin: 20px 0;">
+        <strong>📋 Important:</strong> When configuring your OAuth client, use this callback URL:
+        <br><code style="background: #fff; padding: 5px; border-radius: 3px;">http://localhost:3000/callback</code>
+      </div>
       <a href="/auth" class="button">Start OAuth Flow</a>
       <p><small>Available routes:</small></p>
       <ul>
@@ -138,7 +142,9 @@ app.get('/callback', async (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+  console.log('🚀 Server running on http://localhost:3000');
+  console.log('📋 Make sure your OAuth client redirect URL is set to: http://localhost:3000/callback');
+  console.log('🔍 If you get "Authorization code not provided", check that your redirect URL matches exactly!');
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error('❌ Error: Port 3000 is already in use!');
