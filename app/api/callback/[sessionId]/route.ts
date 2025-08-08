@@ -48,7 +48,17 @@ export async function GET(
         expires_in: tokenData.expires_in
       });
       
-      // Redirect to success page with template download options
+      // Check if there's a custom callback URL to redirect back to the original app
+      if (session.customCallbackUrl) {
+        console.log(`Redirecting to custom callback URL: ${session.customCallbackUrl}`);
+        // Redirect back to the original application with the session ID
+        const callbackUrl = new URL(session.customCallbackUrl);
+        callbackUrl.searchParams.set('sessionId', sessionId);
+        callbackUrl.searchParams.set('success', 'true');
+        return NextResponse.redirect(callbackUrl);
+      }
+      
+      // Fallback: Redirect to framework homepage with success message
       return NextResponse.redirect(new URL(`/?success=oauth_completed&sessionId=${sessionId}`, request.url));
     } catch (error) {
       console.error('Failed to process OAuth callback:', error);

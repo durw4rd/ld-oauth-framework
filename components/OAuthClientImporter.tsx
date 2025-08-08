@@ -11,6 +11,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('');
+  const [callbackUrl, setCallbackUrl] = useState('');
   const [isStoring, setIsStoring] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -88,6 +89,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
           redirectUrl: redirectUrl.trim(),
+          callbackUrl: callbackUrl.trim() || undefined,
         }),
         signal: controller.signal,
       });
@@ -127,6 +129,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
     setClientId('');
     setClientSecret('');
     setRedirectUrl('');
+    setCallbackUrl('');
     setError('');
     setSuccess('');
     setShowRedirectUrl(false);
@@ -253,6 +256,44 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
                 ✅ Extracted session ID: <code className="bg-green-100 px-1 rounded">{extractedSessionId}</code>
               </p>
             )}
+          </div>
+
+          {/* Callback URL (Optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Callback URL (Optional)
+            </label>
+            <input
+              type="url"
+              value={callbackUrl}
+              onChange={(e) => setCallbackUrl(e.target.value)}
+              placeholder="https://your-app.com/oauth/callback"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+            />
+            <p className="text-sm text-gray-600 mt-1">
+              After OAuth completion, redirect back to your app with the session ID. Leave empty to stay on the framework.
+            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-gray-500">Common patterns:</p>
+              <div className="text-xs space-y-1">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCallbackUrl('http://localhost:3000/oauth/callback')}
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Local Development: http://localhost:3000/oauth/callback
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCallbackUrl('https://your-app.com/oauth/callback')}
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Production: https://your-app.com/oauth/callback
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
 

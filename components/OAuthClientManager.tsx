@@ -232,6 +232,7 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
             <h3 className="text-sm font-semibold text-blue-900 mb-2">🔄 When to Update Redirect URL</h3>
             <div className="text-sm text-blue-800 space-y-1">
               <p>• <strong>Development:</strong> Use framework callback URL for testing</p>
+              <p>• <strong>Local Development:</strong> Use localhost URLs (e.g., http://localhost:3000)</p>
               <p>• <strong>Production:</strong> Update to your app&apos;s callback URL</p>
               <p>• <strong>HTTPS Required:</strong> Production URLs must use HTTPS</p>
               <p>• <strong>Localhost:</strong> Allowed for development only</p>
@@ -275,6 +276,14 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
               <div className="mt-2 space-y-2">
                 <p className="text-xs text-gray-500">Common patterns:</p>
                 <div className="text-xs space-y-1">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setNewRedirectUrl('http://localhost:3000/api/auth/callback')}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Local Development: http://localhost:3000/api/auth/callback
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setNewRedirectUrl('https://your-app.com/api/auth/callback')}
