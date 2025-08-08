@@ -51,10 +51,11 @@ export async function GET(
       // Check if there's a custom callback URL to redirect back to the original app
       if (session.customCallbackUrl) {
         console.log(`Redirecting to custom callback URL: ${session.customCallbackUrl}`);
-        // Redirect back to the original application with the session ID
+        // Forward the original authorization code to maintain compatibility
         const callbackUrl = new URL(session.customCallbackUrl);
+        callbackUrl.searchParams.set('code', code);
+        // Also include sessionId for framework-specific features
         callbackUrl.searchParams.set('sessionId', sessionId);
-        callbackUrl.searchParams.set('success', 'true');
         return NextResponse.redirect(callbackUrl);
       }
       

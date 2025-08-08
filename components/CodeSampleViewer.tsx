@@ -53,6 +53,7 @@ app.get('/', (req, res) => {
       <div style="background: #f0f8ff; border: 1px solid #0066cc; padding: 15px; border-radius: 5px; margin: 20px 0;">
         <strong>📋 Important:</strong> When configuring your OAuth client, use this callback URL:
         <br><code style="background: #fff; padding: 5px; border-radius: 3px;">http://localhost:3000/callback</code>
+        <br><small>✅ This server works with both direct OAuth and framework proxy - no code changes needed!</small>
       </div>
       <a href="/auth" class="button">Start OAuth Flow</a>
       <p><small>Available routes:</small></p>
@@ -80,14 +81,14 @@ app.get('/auth', (req, res) => {
 
 // Step 2: Handle the callback
 app.get('/callback', async (req, res) => {
-  const { code } = req.query;
+  const { code, sessionId } = req.query;
   
   if (!code) {
     return res.status(400).json({ error: 'Authorization code not provided' });
   }
 
   try {
-    // Exchange code for access token
+    // Exchange code for access token (works with both direct OAuth and framework proxy)
     const tokenResponse = await axios.post('https://app.launchdarkly.com/trust/oauth/token', {
       grant_type: 'authorization_code',
       client_id: CLIENT_ID,
@@ -101,6 +102,13 @@ app.get('/callback', async (req, res) => {
     });
 
     const { access_token } = tokenResponse.data;
+    
+    // Log if this came through the framework
+    if (sessionId) {
+      console.log('OAuth flow completed via framework proxy for session:', sessionId);
+    } else {
+      console.log('OAuth flow completed directly');
+    }
     
     // Example 1: Get caller identity
     const userResponse = await axios.get('https://app.launchdarkly.com/api/v2/caller-identity', {
@@ -143,8 +151,9 @@ app.get('/callback', async (req, res) => {
 
 app.listen(3000, () => {
   console.log('🚀 Server running on http://localhost:3000');
-  console.log('📋 Make sure your OAuth client redirect URL is set to: http://localhost:3000/callback');
-  console.log('🔍 If you get "Authorization code not provided", check that your redirect URL matches exactly!');
+  console.log('📋 Callback URL: http://localhost:3000/callback');
+  console.log('✅ Works with both direct OAuth and framework proxy!');
+  console.log('🔍 Framework proxy forwards authorization code transparently');
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error('❌ Error: Port 3000 is already in use!');
