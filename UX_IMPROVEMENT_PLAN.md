@@ -70,6 +70,21 @@ Step 1: Basic Info
 │  Client Name: [________________]                            │
 │  API Token:   [________________]                            │
 │                                                             │
+│  Redirect URL Configuration:                                │
+│  ○ Use framework as callback server                         │
+│  ○ Provide my own redirect URL                              │
+│                                                             │
+│  [Create OAuth Client]                                      │
+└─────────────────────────────────────────────────────────────┘
+
+Step 1b: Custom Redirect URL (if selected)
+┌─────────────────────────────────────────────────────────────┐
+│  Create New OAuth Client                                    │
+│                                                             │
+│  Client Name:  [________________]                           │
+│  API Token:    [________________]                           │
+│  Redirect URL: [________________]                           │
+│                                                             │
 │  [Create OAuth Client]                                      │
 └─────────────────────────────────────────────────────────────┘
 
@@ -95,6 +110,7 @@ Step 1: Enter Credentials
 │                                                             │
 │  Client ID:     [________________]                          │
 │  Client Secret: [________________]                          │
+│  Redirect URL:  [________________]                          │
 │                                                             │
 │  [Save & Test OAuth Flow]                                   │
 └─────────────────────────────────────────────────────────────┘
@@ -108,12 +124,55 @@ Step 2: Success + Testing
 │                                                             │
 │  🧪 Test the OAuth flow                                     │
 │  📥 Download code samples                                   │
+│  🔧 Update OAuth Client Redirect URL                        │
 │                                                             │
-│  [Test OAuth Flow] [Download Templates]                     │
+│  [Test OAuth Flow] [Download Templates] [Update Redirect]   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 3. **Simplified Component Structure**
+### 3. **Redirect URL Configuration and OAuth Client Management**
+
+**Current Issue**: No clear guidance on redirect URL choices and no easy way to update OAuth clients
+**Solution**: Integrated redirect URL configuration with pros/cons explanation and OAuth client management
+
+#### Redirect URL Configuration Options
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Redirect URL Configuration                                 │
+│                                                             │
+│  Choose how you want to handle OAuth callbacks:             │
+│                                                             │
+│  ○ Use framework as callback server (recommended)           │
+│     ✅ No need to expose localhost to internet              │
+│     ✅ Works immediately for development                    │
+│     ⚠️  Need to update OAuth client redirect URL later      │
+│                                                             │
+│  ○ Provide my own redirect URL                              │
+│     ✅ Direct control over callback handling                │
+│     ✅ No need to update OAuth client later                 │
+│     ⚠️  Requires HTTPS endpoint (localhost won't work)      │
+│     ⚠️  Need to set up your own callback server             │
+│                                                             │
+│  [Continue with selected option]                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### OAuth Client Management Interface
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Update OAuth Client Redirect URL                           │
+│                                                             │
+│  Current Client: abc123...                                  │
+│  Current Redirect: https://ld-oauth-framework.vercel.app/   │
+│                                                             │
+│  New Redirect URL: [________________]                       │
+│  API Token:        [________________]                       │
+│                                                             │
+│  [Update Redirect URL]                                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 4. **Simplified Component Structure**
 
 **Current Components to Refactor**:
 - `ClientManager.tsx` (432 lines) → Too complex, handles multiple concerns
@@ -125,15 +184,16 @@ Step 2: Success + Testing
 ```
 components/
 ├── LandingPage.tsx          # New: Clean landing with two paths
-├── OAuthClientCreator.tsx   # Refactored: Simplified creation flow
+├── OAuthClientCreator.tsx   # Refactored: Simplified creation flow with redirect URL options
 ├── OAuthClientImporter.tsx  # New: For existing OAuth clients
+├── OAuthClientManager.tsx   # Refactored: Simplified OAuth client management
 ├── OAuthTester.tsx         # New: Test OAuth flow
 ├── TemplateDownload.tsx     # Refactored: Better integration
 ├── Navigation.tsx           # Simplified
 └── TokenViewer.tsx         # Keep as is (advanced feature)
 ```
 
-### 4. **Enhanced Code Sample Delivery**
+### 5. **Enhanced Code Sample Delivery**
 
 **Current Issue**: Templates are separate downloads
 **Solution**: Integrated code sample viewer with copy-paste functionality
@@ -158,7 +218,7 @@ components/
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5. **Improved Success States and Guidance**
+### 6. **Improved Success States and Guidance**
 
 **Current Issue**: Success messages are generic
 **Solution**: Contextual success messages with clear next steps
@@ -195,7 +255,7 @@ Next steps:
 [Test OAuth Flow] [Download Code Samples] [View Setup Guide]
 ```
 
-### 6. **Simplified Navigation and Information Architecture**
+### 7. **Simplified Navigation and Information Architecture**
 
 **Current Issue**: Too many options and technical details visible
 **Solution**: Clean, progressive navigation
@@ -212,7 +272,7 @@ Header: LaunchDarkly OAuth Framework
     └── Debug Session
 ```
 
-### 7. **Enhanced Error Handling and User Guidance**
+### 8. **Enhanced Error Handling and User Guidance**
 
 **Current Issue**: Generic error messages
 **Solution**: Contextual error messages with actionable guidance
@@ -230,10 +290,72 @@ Possible solutions:
 [Try Again] [Get Help] [View Documentation]
 ```
 
-### 8. **Mobile-Responsive Design Improvements**
+### 9. **Mobile-Responsive Design Improvements**
 
 **Current Issue**: Complex forms on mobile
 **Solution**: Simplified mobile experience with better touch targets
+
+### 10. **Redirect URL Handling for Existing OAuth Clients**
+
+**Question**: Is the redirect URL of the existing client needed for Flow 2?
+
+**Answer**: **YES, the redirect URL is needed for Flow 2.** Here's why and how it works:
+
+#### The Problem
+When an OAuth client is registered in LaunchDarkly, it must have a specific redirect URL configured. The OAuth flow will only work if the callback comes from that exact URL.
+
+#### The Solution
+For Flow 2 (Use Existing OAuth Client), we need to handle this properly:
+
+1. **User provides existing OAuth client credentials** (Client ID, Client Secret)
+2. **User must also provide the current redirect URL** that's configured in their OAuth client
+3. **Framework validates the redirect URL** matches what's expected
+4. **Framework uses the existing redirect URL** for the OAuth flow, not a dynamic one
+
+#### Updated Flow 2 Design
+```
+Step 1: Enter Credentials
+┌─────────────────────────────────────────────────────────────┐
+│  Use Existing OAuth Client                                  │
+│                                                             │
+│  Client ID:     [________________]                          │
+│  Client Secret: [________________]                          │
+│                                                             │
+│  Redirect URL Configuration:                                │
+│  Your OAuth client must use this exact redirect URL:        │
+│                                                             │
+│  https://ld-oauth-framework.vercel.app/api/callback/       │
+│  [session-id-here]                                          │
+│                                                             │
+│  Session ID: [________________]                             │
+│                                                             │
+│  [Save & Test OAuth Flow]                                   │
+└─────────────────────────────────────────────────────────────┘
+
+Step 1b: Redirect URL Setup (if needed)
+┌─────────────────────────────────────────────────────────────┐
+│  Update Your OAuth Client                                   │
+│                                                             │
+│  Copy this redirect URL to your OAuth client:               │
+│                                                             │
+│  https://ld-oauth-framework.vercel.app/api/callback/abc123 │
+│                                                             │
+│  [Copy URL] [Update OAuth Client] [Continue]               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Alternative Approach: Framework as Proxy
+If the user wants to use the framework as a callback server, they need to:
+
+1. **Update their OAuth client's redirect URL** to point to the framework with the session ID
+2. **Use the OAuth Client Management interface** to update the redirect URL
+3. **Then use Flow 2** with the framework's redirect URL
+
+**Recommended Approach**: Use Option C with clear guidance:
+1. **Show the exact redirect URL format** the framework expects
+2. **Let user enter just the session ID** (the dynamic part)
+3. **Provide a copy-paste ready redirect URL** for their OAuth client configuration
+4. **Include a link to the OAuth Client Management interface** for updating the redirect URL
 
 ## Implementation Priority
 

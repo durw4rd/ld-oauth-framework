@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { generateSessionId, FRAMEWORK_URL, validateSessionId } from '../lib/config';
 import TemplateDownload from './TemplateDownload';
-import OAuthClientManager from './OAuthClientManager';
 
 type SetupMode = 'manual' | 'auto';
 
@@ -418,13 +417,7 @@ export default function ClientManager() {
             />
           )}
 
-          {/* OAuth Client Manager Section */}
-          {success && clientId && (
-            <OAuthClientManager
-              clientId={clientId}
-              currentRedirectUrl={generateFrameworkRedirectUrl()}
-            />
-          )}
+
         </div>
       </div>
     </div>

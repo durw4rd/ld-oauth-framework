@@ -1,4 +1,4 @@
-import ClientManager from '../components/ClientManager';
+import LandingPage from '../components/LandingPage';
 import TemplateDownload from '../components/TemplateDownload';
 
 
@@ -47,7 +47,7 @@ export default async function Home({
         )}
 
         {/* Main Content */}
-        <ClientManager />
+        <LandingPage />
 
         {/* Template Download Section for OAuth Success */}
         {success === 'oauth_completed' && sessionId && (

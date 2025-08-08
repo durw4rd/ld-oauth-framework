@@ -1,0 +1,284 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+
+interface CodeSample {
+  language: string;
+  title: string;
+  code: string;
+  description: string;
+}
+
+interface CodeSampleViewerProps {
+  clientId: string;
+  clientSecret: string;
+  redirectUrl: string;
+}
+
+export default function CodeSampleViewer({ clientId, clientSecret, redirectUrl }: CodeSampleViewerProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('nodejs');
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const codeSamples: CodeSample[] = [
+    {
+      language: 'nodejs',
+      title: 'Node.js',
+      description: 'Complete OAuth flow implementation using Express.js',
+      code: `const express = require('express');
+const axios = require('axios');
+
+const app = express();
+app.use(express.json());
+
+const CLIENT_ID = '${clientId}';
+const CLIENT_SECRET = '${clientSecret}';
+const REDIRECT_URI = '${redirectUrl}';
+
+// Step 1: Redirect user to LaunchDarkly authorization
+app.get('/auth', (req, res) => {
+  const authUrl = \`https://app.launchdarkly.com/trust/oauth/authorize?\${new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    scope: 'reader'
+  })}\`;
+  
+  res.redirect(authUrl);
+});
+
+// Step 2: Handle the callback
+app.get('/callback', async (req, res) => {
+  const { code } = req.query;
+  
+  if (!code) {
+    return res.status(400).json({ error: 'Authorization code not provided' });
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await axios.post('https://app.launchdarkly.com/trust/oauth/token', {
+      grant_type: 'authorization_code',
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      code,
+      redirect_uri: REDIRECT_URI
+    }, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    const { access_token } = tokenResponse.data;
+    
+    // Use the access token to make API calls
+    const userResponse = await axios.get('https://app.launchdarkly.com/api/v2/caller-identity', {
+      headers: {
+        'Authorization': \`Bearer \${access_token}\`
+      }
+    });
+
+    res.json({
+      success: true,
+      user: userResponse.data,
+      access_token
+    });
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    res.status(500).json({ error: 'Failed to exchange code for token' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});`
+    },
+    {
+      language: 'python',
+      title: 'Python',
+      description: 'OAuth flow implementation using Flask',
+      code: `from flask import Flask, request, redirect, jsonify
+import requests
+import urllib.parse
+
+app = Flask(__name__)
+
+CLIENT_ID = '${clientId}'
+CLIENT_SECRET = '${clientSecret}'
+REDIRECT_URI = '${redirectUrl}'
+
+@app.route('/auth')
+def auth():
+    """Redirect user to LaunchDarkly authorization"""
+    params = {
+        'client_id': CLIENT_ID,
+        'redirect_uri': REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'reader'
+    }
+    
+    auth_url = f"https://app.launchdarkly.com/trust/oauth/authorize?{urllib.parse.urlencode(params)}"
+    return redirect(auth_url)
+
+@app.route('/callback')
+def callback():
+    """Handle the OAuth callback"""
+    code = request.args.get('code')
+    
+    if not code:
+        return jsonify({'error': 'Authorization code not provided'}), 400
+
+    try:
+        # Exchange code for access token
+        token_data = {
+            'grant_type': 'authorization_code',
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET,
+            'code': code,
+            'redirect_uri': REDIRECT_URI
+        }
+        
+        token_response = requests.post(
+            'https://app.launchdarkly.com/trust/oauth/token',
+            data=token_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        )
+        
+        token_response.raise_for_status()
+        token_info = token_response.json()
+        access_token = token_info['access_token']
+        
+        # Use the access token to make API calls
+        user_response = requests.get(
+            'https://app.launchdarkly.com/api/v2/caller-identity',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        
+        return jsonify({
+            'success': True,
+            'user': user_response.json(),
+            'access_token': access_token
+        })
+        
+    except requests.RequestException as e:
+        print(f'Token exchange error: {e}')
+        return jsonify({'error': 'Failed to exchange code for token'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, port=3000)`
+    },
+    {
+      language: 'curl',
+      title: 'cURL',
+      description: 'Manual OAuth flow using cURL commands',
+      code: `# Step 1: Open this URL in your browser to authorize
+# https://app.launchdarkly.com/trust/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=reader
+
+# Step 2: After authorization, you'll get a code. Replace YOUR_CODE_HERE with the actual code
+CODE="YOUR_CODE_HERE"
+
+# Step 3: Exchange the code for an access token
+curl -X POST https://app.launchdarkly.com/trust/oauth/token \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  -d "grant_type=authorization_code" \\
+  -d "client_id=${clientId}" \\
+  -d "client_secret=${clientSecret}" \\
+  -d "code=\$CODE" \\
+  -d "redirect_uri=${redirectUrl}"
+
+# Step 4: Use the access token to make API calls
+# Replace YOUR_ACCESS_TOKEN with the token from the previous response
+ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
+
+curl -H "Authorization: Bearer \$ACCESS_TOKEN" \\
+  https://app.launchdarkly.com/api/v2/caller-identity`
+    }
+  ];
+
+  const copyToClipboard = async (text: string, language: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(language);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const selectedSample = codeSamples.find(sample => sample.language === selectedLanguage) || codeSamples[0];
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Code Samples for Your OAuth App
+        </h1>
+        <p className="text-gray-600">
+          Copy and paste these code samples into your application to implement OAuth authentication with LaunchDarkly.
+        </p>
+      </div>
+
+      {/* Language Tabs */}
+      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+        {codeSamples.map((sample) => (
+          <button
+            key={sample.language}
+            onClick={() => setSelectedLanguage(sample.language)}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              selectedLanguage === sample.language
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {sample.title}
+          </button>
+        ))}
+      </div>
+
+      {/* Code Sample */}
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{selectedSample.title}</h3>
+              <p className="text-sm text-gray-600">{selectedSample.description}</p>
+            </div>
+            <button
+              onClick={() => copyToClipboard(selectedSample.code, selectedLanguage)}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {copied === selectedLanguage ? 'Copied!' : 'Copy Code'}
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+            <code>{selectedSample.code}</code>
+          </pre>
+        </div>
+      </div>
+
+      {/* Additional Resources */}
+      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-blue-900 mb-3">Additional Resources</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-blue-900 mb-2">📖 Documentation</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <a href="https://docs.launchdarkly.com/docs/oauth" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">LaunchDarkly OAuth Documentation</a></li>
+              <li>• <a href="https://docs.launchdarkly.com/docs/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">LaunchDarkly API Reference</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-medium text-blue-900 mb-2">🔧 Tools</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <Link href="/test/${sessionId}" className="underline hover:text-blue-600">Test OAuth Flow</Link></li>
+              <li>• <a href="/oauth-client-manager" className="underline hover:text-blue-600">Manage OAuth Client</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

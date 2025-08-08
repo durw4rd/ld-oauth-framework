@@ -19,17 +19,57 @@ export default function Navigation() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Client Manager
+              Home
             </Link>
             <Link 
-              href="/template"
+              href="/create"
               className={`text-sm font-medium ${
-                pathname === '/template' 
+                pathname === '/create' 
                   ? 'text-blue-600 border-b-2 border-blue-600' 
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Template Download
+              Create Client
+            </Link>
+            <Link 
+              href="/import"
+              className={`text-sm font-medium ${
+                pathname === '/import' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Dev Server
+            </Link>
+            <Link 
+              href="/templates"
+              className={`text-sm font-medium ${
+                pathname === '/templates' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Templates
+            </Link>
+            <Link 
+              href="/oauth-client-manager"
+              className={`text-sm font-medium ${
+                pathname === '/oauth-client-manager' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Manage
+            </Link>
+            <Link 
+              href="/docs"
+              className={`text-sm font-medium ${
+                pathname === '/docs' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Docs
             </Link>
           </div>
           <div className="text-sm text-gray-500">

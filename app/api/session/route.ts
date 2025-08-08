@@ -4,9 +4,9 @@ import { storeSession } from '../../../lib/oauth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sessionId, clientId, clientSecret } = body;
+    const { sessionId, clientId, clientSecret, redirectUrl } = body;
 
-    console.log('Received session storage request:', { sessionId, clientId, clientSecret: '***' });
+    console.log('Received session storage request:', { sessionId, clientId, clientSecret: '***', redirectUrl });
 
     if (!sessionId || !clientId || !clientSecret) {
       return NextResponse.json(
@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store session data
-    await storeSession(sessionId, clientId, clientSecret, '3000');
+    // Store session data with redirect URL if provided
+    await storeSession(sessionId, clientId, clientSecret, '3000', redirectUrl);
 
     console.log(`Session stored successfully for: ${sessionId}`);
 
