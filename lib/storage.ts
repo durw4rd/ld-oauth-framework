@@ -38,7 +38,7 @@ class InMemoryStorage implements StorageBackend {
   }
 }
 
-// Redis storage (production)
+// Redis storage (production and development)
 class RedisStorage implements StorageBackend {
   private redis: ReturnType<typeof createClient> | null = null;
 
@@ -107,14 +107,14 @@ class RedisStorage implements StorageBackend {
   }
 }
 
-// Storage factory
+// Storage factory - use Redis whenever available (both local and deployed)
 export function createStorage(): StorageBackend {
-  // In production, try to use Redis if available
-  if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+  // Use Redis if REDIS_URL is available (both development and production)
+  if (process.env.REDIS_URL) {
     return new RedisStorage();
   }
   
-  // Fallback to in-memory storage
+  // Fallback to in-memory storage only if no Redis URL
   return new InMemoryStorage();
 }
 

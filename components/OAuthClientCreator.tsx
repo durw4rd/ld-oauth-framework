@@ -19,12 +19,14 @@ export default function OAuthClientCreator() {
   const [apiToken, setApiToken] = useState('');
   const [clientName, setClientName] = useState('');
   const [sessionId, setSessionId] = useState(generateSessionId());
+  const [developerRedirectUrl, setDeveloperRedirectUrl] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [createdClient, setCreatedClient] = useState<OAuthClient | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const generateRedirectUrl = () => `${FRAMEWORK_URL}/api/callback/${sessionId}`;
+  const generateFrameworkRedirectUrl = () => `${FRAMEWORK_URL}/api/callback/${sessionId}`;
+  const generateDeveloperRedirectUrl = () => developerRedirectUrl || generateFrameworkRedirectUrl();
 
   const createClient = async () => {
     if (!apiToken || !clientName || !sessionId) {
@@ -43,7 +45,7 @@ export default function OAuthClientCreator() {
         body: JSON.stringify({
           apiToken,
           name: clientName,
-          redirectUri: generateRedirectUrl(),
+          redirectUri: generateDeveloperRedirectUrl(),
           sessionId
         }),
       });
@@ -133,7 +135,7 @@ export default function OAuthClientCreator() {
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
                 placeholder="Enter your LaunchDarkly API token"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
               />
               <p className="text-sm text-gray-600 mt-1">
                 This token needs Admin privileges to create OAuth clients
@@ -150,7 +152,7 @@ export default function OAuthClientCreator() {
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 placeholder="Enter a name for your OAuth client"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
               />
             </div>
 
@@ -175,6 +177,23 @@ export default function OAuthClientCreator() {
               </div>
             </div>
 
+            {/* Developer's App Redirect URL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your App&apos;s Redirect URL (Optional)
+              </label>
+              <input
+                type="url"
+                value={developerRedirectUrl}
+                onChange={(e) => setDeveloperRedirectUrl(e.target.value)}
+                placeholder="https://your-app.com/api/auth/callback"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+              />
+              <p className="text-sm text-gray-600 mt-1">
+                Enter your app&apos;s callback URL. Leave empty to use framework&apos;s test URL.
+              </p>
+            </div>
+
             {/* Redirect URL Preview */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -183,12 +202,12 @@ export default function OAuthClientCreator() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={generateRedirectUrl()}
+                  value={generateDeveloperRedirectUrl()}
                   readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                 />
                 <button
-                  onClick={() => copyToClipboard(generateRedirectUrl())}
+                  onClick={() => copyToClipboard(generateDeveloperRedirectUrl())}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Copy
@@ -213,9 +232,10 @@ export default function OAuthClientCreator() {
               <ol className="list-decimal list-inside space-y-1 text-blue-800">
                 <li>Enter your LaunchDarkly API token (requires Admin privileges)</li>
                 <li>Provide a name for your OAuth client</li>
+                <li>Optionally enter your app&apos;s redirect URL</li>
                 <li>Click &quot;Create OAuth Client&quot; to create it in LaunchDarkly</li>
                 <li>The client credentials will be automatically saved for testing</li>
-                <li>You can then test the OAuth flow immediately</li>
+                <li>You can then test the OAuth flow and download templates</li>
               </ol>
             </div>
           </div>
@@ -259,7 +279,8 @@ export default function OAuthClientCreator() {
               <ol className="list-decimal list-inside space-y-1 text-yellow-800">
                 <li>Your session data has been automatically saved</li>
                 <li>You can now test the OAuth flow using the authorization URL below</li>
-                <li>After authorization, you&apos;ll be redirected to the token viewer</li>
+                <li>After authorization, you&apos;ll be redirected to download templates and examples</li>
+                <li>Use the templates to build your own OAuth application</li>
               </ol>
             </div>
 
@@ -273,11 +294,11 @@ export default function OAuthClientCreator() {
                   type="text"
                   value={`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient._clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUri)}&response_type=code&scope=reader`}
                   readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                 />
                 <button
                   onClick={() => copyToClipboard(`https://app.launchdarkly.com/trust/oauth/authorize?client_id=${createdClient._clientId}&redirect_uri=${encodeURIComponent(createdClient.redirectUri)}&response_type=code&scope=reader`)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-gray-500"
                 >
                   Copy
                 </button>

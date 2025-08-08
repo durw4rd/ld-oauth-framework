@@ -1,0 +1,30 @@
+{
+  "85a54a18-4681-415d-bdee-6b4c64e6b407": {
+    "clientId": "bf2f4488-2f30-4ec581d47-de5e-4b04-a9a8-ebbd6ec7e72affbe897d-fa17-4739-bee7-1a128653c37ae72-8e4e-088877189d24",
+    "clientSecret": "ec581d47-de5e-4b04-a9a8-ebbd6ec7e72affbe897d-fa17-4739-bee7-1a128653c37a",
+    "localhostPort": "3000",
+    "createdAt": 1754602320654,
+    "expiresAt": 1754688720654
+  },
+  "b58edc08-a379-47bd-85f8-976330d56746": {
+    "clientId": "6cc94fce-5223-407f-9f47-a6c3e7411279",
+    "clientSecret": "ae23ddaf-ca4e-4c37-9618-cc194e57dcf01ad0e4ee-d645-4499-85b7-ca35c32d8e2d",
+    "localhostPort": "3000",
+    "createdAt": 1754604579011,
+    "expiresAt": 1754690979011
+  },
+  "bd671276-b28e-477c-8a32-6c9e97a6e9b9": {
+    "clientId": "4ab8be78-ce39-49dd-9d9f-389170a8736b",
+    "clientSecret": "b11285f4-3080-4f62-a40f-65b16745f19ab74e2ae0-83e3-4f68-8e4a-33fd29dc80f8",
+    "localhostPort": "3000",
+    "createdAt": 1754605558710,
+    "expiresAt": 1754691958710
+  },
+  "06ad9707-80ab-43eb-8535-1ef08db43339": {
+    "clientId": "4ab8be78-ce39-49dd-9d9f-389170a8736b",
+    "clientSecret": "b11285f4-3080-4f62-a40f-65b16745f19ab74e2ae0-83e3-4f68-8e4a-33fd29dc80f8",
+    "localhostPort": "3000",
+    "createdAt": 1754605803332,
+    "expiresAt": 1754692203332
+  }
+}

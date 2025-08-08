@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { sessionId, clientId, clientSecret } = body;
 
+    console.log('Received session storage request:', { sessionId, clientId, clientSecret: '***' });
+
     if (!sessionId || !clientId || !clientSecret) {
       return NextResponse.json(
         { error: 'Missing required fields: sessionId, clientId, clientSecret' },
@@ -16,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Store session data
     await storeSession(sessionId, clientId, clientSecret, '3000');
 
-    console.log(`Session stored for: ${sessionId}`);
+    console.log(`Session stored successfully for: ${sessionId}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

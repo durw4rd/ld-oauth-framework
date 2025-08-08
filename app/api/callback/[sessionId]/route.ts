@@ -48,8 +48,8 @@ export async function GET(
         expires_in: tokenData.expires_in
       });
       
-      // Redirect to token viewer page
-      return NextResponse.redirect(new URL(`/tokens/${sessionId}`, request.url));
+      // Redirect to success page with template download options
+      return NextResponse.redirect(new URL(`/?success=oauth_completed&sessionId=${sessionId}`, request.url));
     } catch (error) {
       console.error('Failed to process OAuth callback:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

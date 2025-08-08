@@ -1,4 +1,6 @@
 export const DEFAULT_LOCALHOST_PORT = 3000;
+
+// Always use the deployed URL for OAuth redirects since LaunchDarkly doesn't accept localhost
 export const FRAMEWORK_URL = process.env.FRAMEWORK_URL || 'https://ld-oauth-framework.vercel.app';
 
 export const getLocalhostPort = () => 
