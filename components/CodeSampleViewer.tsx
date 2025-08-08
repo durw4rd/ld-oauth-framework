@@ -145,13 +145,148 @@ app.get('/callback', async (req, res) => {
       flags = flagsResponse.data.items || [];
     }
 
-    res.json({
-      success: true,
-      user: userResponse.data,
-      projects: projectsResponse.data.items,
-      flags: flags.slice(0, 5), // Show first 5 flags
-      access_token
-    });
+    // Return a nice HTML success page instead of JSON
+    const html = \`
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Success - LaunchDarkly</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+    .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .error { background: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .button { display: inline-block; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; margin: 10px 5px; border: none; cursor: pointer; }
+    .button:hover { background: #0052a3; }
+    .button.secondary { background: #6c757d; }
+    .button.secondary:hover { background: #5a6268; }
+    .button.success { background: #28a745; }
+    .button.success:hover { background: #218838; }
+    .data-section { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 6px; margin: 15px 0; }
+    .loading { color: #6c757d; font-style: italic; }
+    pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="success">
+    <h1>✅ OAuth Success!</h1>
+    <p>Your OAuth authentication with LaunchDarkly was successful!</p>
+    <p><strong>Access Token:</strong> <code>\${access_token.substring(0, 20)}...</code></p>
+  </div>
+
+  <div class="info">
+    <h2>🔍 API Verification</h2>
+    <p>Click the buttons below to verify your access token by calling LaunchDarkly APIs:</p>
+    
+    <button class="button" onclick="loadUserInfo()">👤 Get User Info</button>
+    <button class="button" onclick="loadProjects()">📁 List Projects</button>
+    <button class="button" onclick="loadFlags()">🚩 List Flags</button>
+    <button class="button secondary" onclick="window.location.href='/'">🏠 Back to Home</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    const accessToken = '\${access_token}';
+    
+    async function loadUserInfo() {
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = 'Loading...';
+      button.disabled = true;
+      
+      try {
+        const response = await fetch('https://app.launchdarkly.com/api/v2/caller-identity', {
+          headers: { 'Authorization': 'Bearer ' + accessToken }
+        });
+        
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        
+        const data = await response.json();
+        displayResult('User Information', data);
+      } catch (error) {
+        displayError('Failed to load user info: ' + error.message);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+    
+    async function loadProjects() {
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = 'Loading...';
+      button.disabled = true;
+      
+      try {
+        const response = await fetch('https://app.launchdarkly.com/api/v2/projects', {
+          headers: { 'Authorization': 'Bearer ' + accessToken }
+        });
+        
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        
+        const data = await response.json();
+        displayResult('Projects', data);
+      } catch (error) {
+        displayError('Failed to load projects: ' + error.message);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+    
+    async function loadFlags() {
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = 'Loading...';
+      button.disabled = true;
+      
+      try {
+        // First get projects to find a project key
+        const projectsResponse = await fetch('https://app.launchdarkly.com/api/v2/projects', {
+          headers: { 'Authorization': 'Bearer ' + accessToken }
+        });
+        
+        if (!projectsResponse.ok) throw new Error('HTTP ' + projectsResponse.status);
+        
+        const projects = await projectsResponse.json();
+        if (!projects.items || projects.items.length === 0) {
+          displayError('No projects found to load flags from');
+          return;
+        }
+        
+        // Use the first project to get flags
+        const projectKey = projects.items[0].key;
+        const flagsResponse = await fetch('https://app.launchdarkly.com/api/v2/flags/' + projectKey, {
+          headers: { 'Authorization': 'Bearer ' + accessToken }
+        });
+        
+        if (!flagsResponse.ok) throw new Error('HTTP ' + flagsResponse.status);
+        
+        const data = await flagsResponse.json();
+        displayResult('Flags from ' + projectKey, data);
+      } catch (error) {
+        displayError('Failed to load flags: ' + error.message);
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    }
+    
+    function displayResult(title, data) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<div class="data-section"><h3>✅ ' + title + '</h3><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
+    }
+    
+    function displayError(message) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<div class="error"><h3>❌ Error</h3><p>' + message + '</p></div>';
+    }
+  </script>
+</body>
+</html>\`;
+    
+    res.send(html);
   } catch (error) {
     console.error('Token exchange error:', error);
     res.status(500).json({ error: 'Failed to exchange code for token' });
