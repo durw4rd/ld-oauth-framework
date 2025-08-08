@@ -8,7 +8,6 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const success = params.success;
-  const sessionId = params.sessionId as string;
   const error = params.error;
   const errorMessage = params.message;
 
