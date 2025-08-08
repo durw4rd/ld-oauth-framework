@@ -228,6 +228,15 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Update Redirect URL for: {selectedClient.name}
           </h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="text-sm font-semibold text-blue-900 mb-2">🔄 When to Update Redirect URL</h3>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>• <strong>Development:</strong> Use framework callback URL for testing</p>
+              <p>• <strong>Production:</strong> Update to your app&apos;s callback URL</p>
+              <p>• <strong>HTTPS Required:</strong> Production URLs must use HTTPS</p>
+              <p>• <strong>Localhost:</strong> Allowed for development only</p>
+            </div>
+          </div>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -249,11 +258,41 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
                 value={newRedirectUrl}
                 onChange={(e) => setNewRedirectUrl(e.target.value)}
                 placeholder="https://your-production-app.com/callback"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 ${
+                  newRedirectUrl && !newRedirectUrl.startsWith('https://') && !newRedirectUrl.startsWith('http://localhost')
+                    ? 'border-red-300 focus:ring-red-500'
+                    : 'border-gray-300 focus:ring-blue-500'
+                }`}
               />
+              {newRedirectUrl && !newRedirectUrl.startsWith('https://') && !newRedirectUrl.startsWith('http://localhost') && (
+                <p className="text-sm text-red-600 mt-1">
+                  ⚠️ Production URLs must use HTTPS. Only localhost can use HTTP.
+                </p>
+              )}
               <p className="text-sm text-gray-600 mt-1">
                 Enter the new redirect URL for production deployment
               </p>
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-gray-500">Common patterns:</p>
+                <div className="text-xs space-y-1">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setNewRedirectUrl('https://your-app.com/api/auth/callback')}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Production: https://your-app.com/api/auth/callback
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setNewRedirectUrl('https://your-app.com/oauth/callback')}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Alternative: https://your-app.com/oauth/callback
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3">
@@ -274,6 +313,19 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
                 Cancel
               </button>
             </div>
+            
+            {/* Success/Error Messages */}
+            {success && (
+              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-800 text-sm">{success}</p>
+              </div>
+            )}
+            
+            {error && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

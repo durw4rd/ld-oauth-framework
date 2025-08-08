@@ -1,4 +1,5 @@
 import LandingPage from '../components/LandingPage';
+import LaunchDarklyDataLoader from '../components/LaunchDarklyDataLoader';
 
 
 export default async function Home({
@@ -8,6 +9,7 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const success = params.success;
+  const sessionId = params.sessionId as string;
   const error = params.error;
   const errorMessage = params.message;
 
@@ -47,6 +49,12 @@ export default async function Home({
         {/* Main Content */}
         <LandingPage />
 
+        {/* LaunchDarkly Data Loader for OAuth Success */}
+        {success === 'oauth_completed' && sessionId && (
+          <div className="mt-8">
+            <LaunchDarklyDataLoader sessionId={sessionId} />
+          </div>
+        )}
 
       </div>
     </div>
