@@ -98,13 +98,16 @@ app.get('/callback', async (req, res) => {
     
     console.log('Token exchange redirect URI:', tokenExchangeRedirectUri);
     
-    const tokenResponse = await axios.post('https://app.launchdarkly.com/trust/oauth/token', {
+    // OAuth token exchange requires form-encoded data, not JSON
+    const formData = new URLSearchParams({
       grant_type: 'authorization_code',
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      code,
+      code: code,
       redirect_uri: tokenExchangeRedirectUri
-    }, {
+    });
+    
+    const tokenResponse = await axios.post('https://app.launchdarkly.com/trust/oauth/token', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
