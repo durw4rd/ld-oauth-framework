@@ -21,7 +21,6 @@ export default function OAuthTester({ sessionId }: OAuthTesterProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [authUrl, setAuthUrl] = useState('');
-  const [isTesting, setIsTesting] = useState(false);
 
   const loadSessionData = useCallback(async () => {
     try {
@@ -70,32 +69,9 @@ export default function OAuthTester({ sessionId }: OAuthTesterProps) {
     }
   };
 
-  const testConnection = async () => {
-    setIsTesting(true);
-    setError('');
-    
-    try {
-      const response = await fetch('/api/test-connection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessionId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Redirect to OAuth flow
-        window.location.href = authUrl;
-      } else {
-        setError(data.error || 'Failed to test connection');
-      }
-    } catch {
-      setError('Failed to test connection. Please try again.');
-    } finally {
-      setIsTesting(false);
-    }
+  const startOAuthFlow = () => {
+    // Directly redirect to the authorization URL
+    window.location.href = authUrl;
   };
 
   if (isLoading) {
@@ -234,11 +210,10 @@ export default function OAuthTester({ sessionId }: OAuthTesterProps) {
       {/* Action Buttons */}
       <div className="flex gap-3 justify-center">
         <button
-          onClick={testConnection}
-          disabled={isTesting}
-          className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={startOAuthFlow}
+          className="px-8 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
         >
-          {isTesting ? 'Testing...' : 'Start OAuth Test'}
+          Start OAuth Flow
         </button>
         <Link
           href="/"
