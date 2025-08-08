@@ -24,8 +24,8 @@ export default function CodeSampleViewer({ clientId, clientSecret, redirectUrl }
       language: 'nodejs',
       title: 'Node.js',
       description: 'Complete OAuth flow implementation using Express.js',
-      code: `const express = require('express');
-const axios = require('axios');
+      code: `import express from 'express';
+import axios from 'axios';
 
 const app = express();
 app.use(express.json());
@@ -33,6 +33,34 @@ app.use(express.json());
 const CLIENT_ID = '${clientId}';
 const CLIENT_SECRET = '${clientSecret}';
 const REDIRECT_URI = '${redirectUrl}';
+
+// Root route - landing page
+app.get('/', (req, res) => {
+  res.send(\`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>LaunchDarkly OAuth Client</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .button { display: inline-block; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; }
+        .button:hover { background: #0052a3; }
+      </style>
+    </head>
+    <body>
+      <h1>LaunchDarkly OAuth Client</h1>
+      <p>This is a simple OAuth client for LaunchDarkly. Click the button below to start the OAuth flow.</p>
+      <a href="/auth" class="button">Start OAuth Flow</a>
+      <p><small>Available routes:</small></p>
+      <ul>
+        <li><code>/</code> - This page</li>
+        <li><code>/auth</code> - Start OAuth authorization</li>
+        <li><code>/callback</code> - Handle OAuth callback</li>
+      </ul>
+    </body>
+    </html>
+  \`);
+});
 
 // Step 1: Redirect user to LaunchDarkly authorization
 app.get('/auth', (req, res) => {
@@ -70,16 +98,37 @@ app.get('/callback', async (req, res) => {
 
     const { access_token } = tokenResponse.data;
     
-    // Use the access token to make API calls
+    // Example 1: Get caller identity
     const userResponse = await axios.get('https://app.launchdarkly.com/api/v2/caller-identity', {
       headers: {
         'Authorization': \`Bearer \${access_token}\`
       }
     });
 
+    // Example 2: List all projects
+    const projectsResponse = await axios.get('https://app.launchdarkly.com/api/v2/projects', {
+      headers: {
+        'Authorization': \`Bearer \${access_token}\`
+      }
+    });
+
+    // Example 3: Get flags from a specific project (using first project as example)
+    let flags = [];
+    if (projectsResponse.data.items && projectsResponse.data.items.length > 0) {
+      const firstProject = projectsResponse.data.items[0];
+      const flagsResponse = await axios.get(\`https://app.launchdarkly.com/api/v2/flags/\${firstProject.key}\`, {
+        headers: {
+          'Authorization': \`Bearer \${access_token}\`
+        }
+      });
+      flags = flagsResponse.data.items || [];
+    }
+
     res.json({
       success: true,
       user: userResponse.data,
+      projects: projectsResponse.data.items,
+      flags: flags.slice(0, 5), // Show first 5 flags
       access_token
     });
   } catch (error) {
@@ -90,7 +139,70 @@ app.get('/callback', async (req, res) => {
 
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
-});`
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error('❌ Error: Port 3000 is already in use!');
+    console.error('   Please either:');
+    console.error('   1. Stop the process using port 3000');
+    console.error('   2. Use a different port by changing the port number in the code');
+    console.error('   3. Run: lsof -ti:3000 | xargs kill -9 (to force kill processes on port 3000)');
+    console.error('');
+    console.error('   You can check what\\'s using the port with: lsof -i :3000');
+  } else {
+    console.error('❌ Server error:', err);
+  }
+  process.exit(1);
+});
+
+// Example: Using the access token for API calls
+// You can add these functions to your application to interact with LaunchDarkly API
+
+async function getCallerIdentity(accessToken) {
+  try {
+    const response = await axios.get('https://app.launchdarkly.com/api/v2/caller-identity', {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get caller identity:', error.message);
+    throw error;
+  }
+}
+
+async function listProjects(accessToken) {
+  try {
+    const response = await axios.get('https://app.launchdarkly.com/api/v2/projects', {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    return response.data.items;
+  } catch (error) {
+    console.error('Failed to list projects:', error.message);
+    throw error;
+  }
+}
+
+async function getFlags(accessToken, projectKey) {
+  try {
+    const response = await axios.get(\`https://app.launchdarkly.com/api/v2/flags/\${projectKey}\`, {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    return response.data.items;
+  } catch (error) {
+    console.error(\`Failed to get flags for project \${projectKey}:\`, error.message);
+    throw error;
+  }
+}
+
+// Example usage:
+// const identity = await getCallerIdentity(access_token);
+// const projects = await listProjects(access_token);
+// const flags = await getFlags(access_token, 'your-project-key');`
     },
     {
       language: 'python',
@@ -153,9 +265,31 @@ def callback():
             headers={'Authorization': f'Bearer {access_token}'}
         )
         
+        # Example 1: Get caller identity
+        user_data = user_response.json()
+        
+        # Example 2: List all projects
+        projects_response = requests.get(
+            'https://app.launchdarkly.com/api/v2/projects',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        projects_data = projects_response.json()
+        
+        # Example 3: Get flags from first project (if available)
+        flags_data = []
+        if projects_data.get('items') and len(projects_data['items']) > 0:
+            first_project = projects_data['items'][0]
+            flags_response = requests.get(
+                f'https://app.launchdarkly.com/api/v2/flags/{first_project["key"]}',
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            flags_data = flags_response.json().get('items', [])
+        
         return jsonify({
             'success': True,
-            'user': user_response.json(),
+            'user': user_data,
+            'projects': projects_data.get('items', []),
+            'flags': flags_data[:5],  # Show first 5 flags
             'access_token': access_token
         })
         
@@ -189,8 +323,141 @@ curl -X POST https://app.launchdarkly.com/trust/oauth/token \\
 # Replace YOUR_ACCESS_TOKEN with the token from the previous response
 ACCESS_TOKEN="YOUR_ACCESS_TOKEN"
 
+# Get caller identity
 curl -H "Authorization: Bearer \$ACCESS_TOKEN" \\
-  https://app.launchdarkly.com/api/v2/caller-identity`
+  https://app.launchdarkly.com/api/v2/caller-identity
+
+# List all projects
+curl -H "Authorization: Bearer \$ACCESS_TOKEN" \\
+  https://app.launchdarkly.com/api/v2/projects
+
+# Get flags from a specific project (replace PROJECT_KEY with actual project key)
+curl -H "Authorization: Bearer \$ACCESS_TOKEN" \\
+  https://app.launchdarkly.com/api/v2/flags/PROJECT_KEY`
+    },
+    {
+      language: 'api-examples',
+      title: 'API Examples',
+      description: 'Practical examples of using the access token with LaunchDarkly API',
+      code: `// After completing the OAuth flow, you can use the access token to interact with LaunchDarkly API
+// Here are practical examples for common use cases:
+
+// 1. Get caller identity (who is authenticated)
+async function getCallerIdentity(accessToken) {
+  try {
+    const response = await fetch('https://app.launchdarkly.com/api/v2/caller-identity', {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get caller identity:', error.message);
+    throw error;
+  }
+}
+
+// 2. List all projects in the account
+async function listProjects(accessToken) {
+  try {
+    const response = await fetch('https://app.launchdarkly.com/api/v2/projects', {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+    }
+    
+    const data = await response.json();
+    return data.items || [];
+  } catch (error) {
+    console.error('Failed to list projects:', error.message);
+    throw error;
+  }
+}
+
+// 3. Get feature flags from a specific project
+async function getFlags(accessToken, projectKey) {
+  try {
+    const response = await fetch(\`https://app.launchdarkly.com/api/v2/flags/\${projectKey}\`, {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+    }
+    
+    const data = await response.json();
+    return data.items || [];
+  } catch (error) {
+    console.error(\`Failed to get flags for project \${projectKey}:\`, error.message);
+    throw error;
+  }
+}
+
+// Example usage workflow:
+async function demonstrateApiUsage(accessToken) {
+  try {
+    // Step 1: Get caller identity
+    const identity = await getCallerIdentity(accessToken);
+    console.log('Authenticated as:', identity);
+    
+    // Step 2: List all projects
+    const projects = await listProjects(accessToken);
+    console.log('Available projects:', projects);
+    
+    // Step 3: Get flags from the first project
+    if (projects.length > 0) {
+      const firstProject = projects[0];
+      const flags = await getFlags(accessToken, firstProject.key);
+      console.log(\`Flags in \${firstProject.name}:\`, flags);
+    }
+    
+  } catch (error) {
+    console.error('API demonstration failed:', error.message);
+  }
+}
+
+// Node.js with axios:
+const axios = require('axios');
+
+async function getCallerIdentityAxios(accessToken) {
+  try {
+    const response = await axios.get('https://app.launchdarkly.com/api/v2/caller-identity', {
+      headers: {
+        'Authorization': \`Bearer \${accessToken}\`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to get caller identity:', error.message);
+    throw error;
+  }
+}
+
+// Python with requests:
+import requests
+
+def get_caller_identity(access_token):
+    try:
+        response = requests.get(
+            'https://app.launchdarkly.com/api/v2/caller-identity',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f'Failed to get caller identity: {e}')
+        raise`
     }
   ];
 

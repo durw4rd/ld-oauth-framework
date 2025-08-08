@@ -31,10 +31,9 @@ export default function OAuthClientManager({ onClientUpdated }: OAuthClientManag
     setError('');
 
     try {
-      const response = await fetch('/api/oauth-clients', {
+      const response = await fetch(`/api/oauth-clients?apiToken=${encodeURIComponent(apiToken)}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiToken}`,
           'Content-Type': 'application/json',
         },
       });

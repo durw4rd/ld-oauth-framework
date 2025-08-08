@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 
@@ -10,14 +10,33 @@ interface OAuthClientImporterProps {
 export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterProps) {
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [sessionId, setSessionId] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('');
   const [isStoring, setIsStoring] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showRedirectUrl, setShowRedirectUrl] = useState(false);
+  const [extractedSessionId, setExtractedSessionId] = useState<string | null>(null);
 
 
+
+  const extractSessionIdFromRedirectUrl = (url: string): string | null => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      const sessionIdIndex = pathParts.findIndex(part => part === 'callback') + 1;
+      
+      if (sessionIdIndex > 0 && sessionIdIndex < pathParts.length) {
+        const sessionId = pathParts[sessionIdIndex];
+        // Basic validation that it looks like a session ID (UUID format)
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+          return sessionId;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   const copyToClipboard = async (text: string, buttonId: string) => {
     try {
@@ -35,17 +54,26 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
   };
 
   const storeSessionData = async () => {
-    if (!clientId || !clientSecret || !sessionId.trim() || !redirectUrl.trim()) {
-      setError('Please fill in all required fields: Client ID, Client Secret, Session ID, and Redirect URL');
+    if (!clientId || !clientSecret || !redirectUrl.trim()) {
+      setError('Please fill in all required fields: Client ID, Client Secret, and Redirect URL');
       return;
     }
+
+    // Extract session ID from redirect URL
+    const sessionId = extractSessionIdFromRedirectUrl(redirectUrl.trim());
+    if (!sessionId) {
+      setError('Could not extract session ID from redirect URL. Please ensure the URL follows the format: https://ld-oauth-framework.vercel.app/api/callback/{session-id}');
+      return;
+    }
+
+    setExtractedSessionId(sessionId);
     
     setIsStoring(true);
     setError('');
     setSuccess('');
     
     try {
-      console.log('Storing session data:', { sessionId, clientId, clientSecret: '***', redirectUrl });
+      console.log('Storing session data:', { sessionId, clientId, clientSecret: '***', redirectUrl: redirectUrl.trim() });
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -56,7 +84,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionId: sessionId.trim(),
+          sessionId: sessionId,
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
           redirectUrl: redirectUrl.trim(),
@@ -85,14 +113,24 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
     }
   };
 
+  // Auto-extract session ID when redirect URL changes
+  useEffect(() => {
+    if (redirectUrl.trim()) {
+      const sessionId = extractSessionIdFromRedirectUrl(redirectUrl.trim());
+      setExtractedSessionId(sessionId);
+    } else {
+      setExtractedSessionId(null);
+    }
+  }, [redirectUrl]);
+
   const resetForm = () => {
     setClientId('');
     setClientSecret('');
-    setSessionId('');
     setRedirectUrl('');
     setError('');
     setSuccess('');
     setShowRedirectUrl(false);
+    setExtractedSessionId(null);
   };
 
   return (
@@ -103,7 +141,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
           Use Framework as Development Callback Server
         </h1>
         <p className="text-gray-600">
-          Configure your existing OAuth client to use this framework as a development callback server for testing.
+          Enter your OAuth client credentials and redirect URL. The session ID will be automatically extracted from the redirect URL.
         </p>
       </div>
 
@@ -135,7 +173,7 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
                   Copy URL
                 </button>
                 <a
-                  href={`/test/${sessionId}`}
+                  href={`/test/${extractedSessionId}`}
                   className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   Test OAuth Flow
@@ -195,39 +233,27 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
               />
             </div>
 
-            {/* Session ID */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Session ID
-              </label>
-              <input
-                type="text"
-                value={sessionId}
-                onChange={(e) => setSessionId(e.target.value)}
-                placeholder="Enter your existing session ID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Enter the session ID that corresponds to your OAuth client configuration.
+                      {/* Redirect URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Redirect URL
+            </label>
+            <input
+              type="url"
+              value={redirectUrl}
+              onChange={(e) => setRedirectUrl(e.target.value)}
+              placeholder="https://ld-oauth-framework.vercel.app/api/callback/your-session-id"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+            />
+            <p className="text-sm text-gray-600 mt-1">
+              Enter the redirect URL from your OAuth client. The session ID will be automatically extracted from the URL.
+            </p>
+            {extractedSessionId && (
+              <p className="text-sm text-green-600 mt-1">
+                ✅ Extracted session ID: <code className="bg-green-100 px-1 rounded">{extractedSessionId}</code>
               </p>
-            </div>
-
-            {/* Redirect URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Redirect URL
-              </label>
-              <input
-                type="url"
-                value={redirectUrl}
-                onChange={(e) => setRedirectUrl(e.target.value)}
-                placeholder="https://your-oauth-client.com/callback"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
-              />
-              <p className="text-sm text-gray-600 mt-1">
-                Enter the redirect URL currently configured in your OAuth client.
-              </p>
-            </div>
+            )}
+          </div>
 
 
 
@@ -252,10 +278,10 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
       )}
 
       {/* Success Actions */}
-      {success && (
+      {success && extractedSessionId && (
         <div className="flex gap-3 justify-center">
           <Link
-            href={`/test/${sessionId}`}
+            href={`/test/${extractedSessionId}`}
             className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Test OAuth Flow
