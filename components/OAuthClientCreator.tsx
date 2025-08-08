@@ -81,6 +81,7 @@ export default function OAuthClientCreator() {
           sessionId,
           clientId,
           clientSecret,
+          redirectUrl: generateDeveloperRedirectUrl(),
         }),
       });
 

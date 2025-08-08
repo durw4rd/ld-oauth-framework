@@ -124,7 +124,7 @@ export default function LandingPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               ⚡ Quick Actions
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link
                 href="/templates"
                 className="flex items-center justify-center px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 text-sm font-medium text-gray-700"
@@ -136,18 +136,6 @@ export default function LandingPage() {
                 className="flex items-center justify-center px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 text-sm font-medium text-gray-700"
               >
                 🔧 Manage Clients
-              </Link>
-              <Link
-                href="/tokens"
-                className="flex items-center justify-center px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 text-sm font-medium text-gray-700"
-              >
-                🔑 View Tokens
-              </Link>
-              <Link
-                href="/session/debug"
-                className="flex items-center justify-center px-4 py-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 text-sm font-medium text-gray-700"
-              >
-                🐛 Debug Session
               </Link>
             </div>
           </div>

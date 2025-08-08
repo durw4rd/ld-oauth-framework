@@ -15,13 +15,12 @@ interface TokenData {
 }
 
 interface SessionData {
-  exists: boolean;
-  hasClientId?: boolean;
-  hasClientSecret?: boolean;
-  localhostPort?: string;
-  createdAt?: string;
-  expiresAt?: string;
-  timeRemaining?: number;
+  clientId: string;
+  clientSecret: string;
+  localhostPort: string;
+  customCallbackUrl?: string;
+  createdAt: number;
+  expiresAt: number;
 }
 
 interface TestResult {
@@ -95,10 +94,10 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
         }
         
         // Load session data
-        const sessionResponse = await fetch(`/api/session/debug?sessionId=${sid}`);
+        const sessionResponse = await fetch(`/api/session/${sid}`);
         if (sessionResponse.ok) {
           const session = await sessionResponse.json();
-          setSessionData(session);
+          setSessionData(session.session);
         }
       } catch {
         console.error('Error loading data');
@@ -155,7 +154,7 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
         body: JSON.stringify({
           sessionId: sessionIdValue,
           accessToken: tokenData.access_token,
-          clientId: sessionData.hasClientId ? 'your-client-id' : 'your-client-id'
+          clientId: sessionData?.clientId || 'your-client-id'
         }),
       });
 
@@ -237,7 +236,7 @@ export default function TokenViewer({ sessionId }: TokenViewerProps) {
             <h3 className="text-lg font-medium text-blue-900 mb-2">Session Information</h3>
             <p className="text-blue-800">Session ID: {sessionIdValue}</p>
             {sessionData && (
-              <p className="text-blue-800">Status: {sessionData.exists ? 'Active' : 'Not Found'}</p>
+              <p className="text-blue-800">Status: Active</p>
             )}
           </div>
 

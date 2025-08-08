@@ -25,7 +25,7 @@ export default function OAuthTester({ sessionId }: OAuthTesterProps) {
 
   const loadSessionData = useCallback(async () => {
     try {
-      const response = await fetch(`/api/session/debug?sessionId=${sessionId}`);
+      const response = await fetch(`/api/session/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         setSessionData(data.session);

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 
 
 interface OAuthClientImporterProps {
@@ -253,18 +254,18 @@ export default function OAuthClientImporter({ onSuccess }: OAuthClientImporterPr
       {/* Success Actions */}
       {success && (
         <div className="flex gap-3 justify-center">
-          <a
-            href={`/tokens/${sessionId}`}
+          <Link
+            href={`/test/${sessionId}`}
             className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Test OAuth Flow
-          </a>
-          <a
+          </Link>
+          <Link
             href="/templates"
             className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             Download Templates
-          </a>
+          </Link>
         </div>
       )}
     </div>
